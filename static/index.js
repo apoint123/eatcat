@@ -57,22 +57,6 @@ function gl() {
 	len = key.length;
 }
 
-if (isDesktop) {
-	document.write('<div id="gameBody">');
-	document.onkeydown = (e) => {
-		const key = e.key.toLowerCase();
-		if (Object.keys(map).indexOf(key) !== -1 && isplaying()) {
-			click(map[key]);
-		} else if (
-			key == "r" &&
-			document.getElementById("GameScoreLayer").style.display != "none"
-		) {
-			gameRestart();
-			document.getElementById("GameScoreLayer").style.display = "none";
-		}
-	};
-}
-
 let body,
 	blockSize,
 	GameLayer = [],
@@ -82,6 +66,8 @@ let body,
 let transform, transitionDuration;
 
 function init() {
+	var container = document.getElementById("gameBody") || document.body;
+	container.insertAdjacentHTML("beforeend", createGameLayer());
 	showWelcomeLayer();
 	body = document.getElementById("gameBody") || document.body;
 	body.style.height = window.innerHeight + "px";
@@ -94,9 +80,7 @@ function init() {
 	transitionDuration = transform.replace(/ransform/g, "ransitionDuration");
 	GameTimeLayer = document.getElementById("GameTimeLayer");
 	GameLayer.push(document.getElementById("GameLayer1"));
-	GameLayer[0].children = GameLayer[0].querySelectorAll("div");
 	GameLayer.push(document.getElementById("GameLayer2"));
-	GameLayer[1].children = GameLayer[1].querySelectorAll("div");
 	GameLayerBG = document.getElementById("GameLayerBG");
 	if (GameLayerBG.ontouchstart === null) {
 		GameLayerBG.ontouchstart = gameTapEvent;
@@ -111,6 +95,21 @@ function init() {
 	btn.onclick = () => {
 		closeWelcomeLayer();
 	};
+
+	document.addEventListener("keydown", (e) => {
+		if (!isDesktop) return;
+		const key = e.key.toLowerCase();
+
+		if (Object.hasOwn(map, key) && isplaying()) {
+			click(map[key]);
+		} else if (
+			key === "r" &&
+			document.getElementById("GameScoreLayer").style.display !== "none"
+		) {
+			gameRestart();
+			document.getElementById("GameScoreLayer").style.display = "none";
+		}
+	});
 }
 
 function winOpen() {
@@ -574,8 +573,6 @@ function cookie(name, value, time) {
 	return data;
 }
 
-document.write(createGameLayer());
-
 function initSetting() {
 	if (cookie("k")) {
 		const tsmp = parseInt(cookie("k"));
@@ -590,9 +587,7 @@ function initSetting() {
 			GameTimeLayer = document.getElementById("GameTimeLayer");
 			GameLayer = [];
 			GameLayer.push(document.getElementById("GameLayer1"));
-			GameLayer[0].children = GameLayer[0].querySelectorAll("div");
 			GameLayer.push(document.getElementById("GameLayer2"));
-			GameLayer[1].children = GameLayer[1].querySelectorAll("div");
 			GameLayerBG = document.getElementById("GameLayerBG");
 			if (GameLayerBG.ontouchstart === null) {
 				GameLayerBG.ontouchstart = gameTapEvent;
