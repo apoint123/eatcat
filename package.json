@@ -1,0 +1,11 @@
+{
+	"name": "eatcat",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.14",
+		"@types/bun": "latest"
+	}
+}
