@@ -1,25 +1,33 @@
-const isDesktop = navigator["userAgent"].match(
+const isDesktop = !navigator.userAgent.match(
 	/(ipad|iphone|ipod|android|windows phone)/i,
-)
-	? false
-	: true;
-const fontunit = isDesktop
-	? 20
-	: ((window.innerWidth > window.innerHeight
-			? window.innerHeight
-			: window.innerWidth) /
-			320) *
-		10;
-document.write(
-	'<style type="text/css">' +
-		"html,body {font-size:" +
-		(fontunit < 30 ? fontunit : "30") +
-		"px;}" +
-		(isDesktop
-			? "#welcome,#GameTimeLayer,#GameLayerBG,#GameScoreLayer.SHADE{position: absolute;}"
-			: "#welcome,#GameTimeLayer,#GameLayerBG,#GameScoreLayer.SHADE{position:fixed;}@media screen and (orientation:landscape) {#landscape {display: box; display: -webkit-box; display: -moz-box; display: -ms-flexbox;}}") +
-		"</style>",
 );
+
+function initStyle() {
+	let fontunit = isDesktop
+		? 20
+		: ((window.innerWidth > window.innerHeight
+				? window.innerHeight
+				: window.innerWidth) /
+				320) *
+			10;
+	if (fontunit > 30) fontunit = 30;
+
+	const style = document.createElement("style");
+	let cssText = `html,body {font-size:${fontunit}px;}`;
+
+	if (isDesktop) {
+		cssText +=
+			"#welcome,#GameTimeLayer,#GameLayerBG,#GameScoreLayer.SHADE{position: absolute;}";
+	} else {
+		cssText +=
+			"#welcome,#GameTimeLayer,#GameLayerBG,#GameScoreLayer.SHADE{position:fixed;}";
+		cssText +=
+			"@media screen and (orientation:landscape) {#landscape {display: flex;}}";
+	}
+
+	style.innerHTML = cssText;
+	document.head.appendChild(style);
+}
 let map = { d: 1, f: 2, j: 3, k: 4 };
 let key = ["!"];
 const chs = ["@", "!", "#", "&", "+", "-", "%", "*"];
@@ -66,8 +74,12 @@ let body,
 let transform, transitionDuration;
 
 function init() {
+	initStyle();
+
 	var container = document.getElementById("gameBody") || document.body;
-	container.insertAdjacentHTML("beforeend", createGameLayer());
+	if (!document.getElementById("GameLayerBG")) {
+		container.insertAdjacentHTML("beforeend", createGameLayer());
+	}
 	showWelcomeLayer();
 	body = document.getElementById("gameBody") || document.body;
 	body.style.height = window.innerHeight + "px";
@@ -826,3 +838,21 @@ function stair() {
 	len = (__k - 1) * 2;
 	gameRestart();
 }
+
+window.init = init;
+window.gameRestart = gameRestart;
+window.replayBtn = replayBtn;
+window.backBtn = backBtn;
+window.show_setting = show_setting;
+window.save_cookie = save_cookie;
+window.show_btn = show_btn;
+window.nxtpage = nxtpage;
+window.lstpage = lstpage;
+window.hideGameScoreLayer = hideGameScoreLayer;
+window.showWelcomeLayer = showWelcomeLayer;
+window.showImg = showImg;
+window.autoset = autoset;
+window.stair = stair;
+window.foreach = foreach;
+
+init();
