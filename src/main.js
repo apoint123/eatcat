@@ -1,3 +1,7 @@
+import "./style.css";
+import { parseElement, randomFrom } from "./utils/common.ts";
+import { clearAllData, loadData, saveData } from "./utils/storage.ts";
+
 const isDesktop = !navigator.userAgent.match(
 	/(ipad|iphone|ipod|android|windows phone)/i,
 );
@@ -37,7 +41,7 @@ let __Time = 20;
 let __k = 4;
 let _close = false;
 let _fsj = false;
-var url = "./static/image/ClickBefore.png";
+var url = "/image/ClickBefore.png";
 
 function isplaying() {
 	return (
@@ -188,15 +192,15 @@ let _gameBBList = [],
 
 function gameInit() {
 	createjs.Sound.registerSound({
-		src: "./static/music/err.mp3",
+		src: "/audio/err.mp3",
 		id: "err",
 	});
 	createjs.Sound.registerSound({
-		src: "./static/music/end.mp3",
+		src: "/audio/end.mp3",
 		id: "end",
 	});
 	createjs.Sound.registerSound({
-		src: "./static/music/tap.mp3",
+		src: "/audio/tap.mp3",
 		id: "tap",
 	});
 	gameRestart();
@@ -260,13 +264,6 @@ function creatTimeText(n) {
 const _ttreg = / t{1,2}(\d+)/,
 	_clearttClsReg = / t{1,2}\d+| bad/;
 
-function Randomfrom(Min, Max) {
-	const Range = Max - Min;
-	const Rand = Math.random();
-	const num = Min + Math.round(Rand * Range); //四舍五入
-	return num;
-}
-
 function randomPos() {
 	//生成按键产生的随机位置
 	let x = 0;
@@ -302,7 +299,7 @@ function randomPos() {
 		if (num2 < num1) {
 			num2 += __k;
 		}
-		x = Randomfrom(num1, num2) % __k;
+		x = randomFrom(num1, num2) % __k;
 		last += 2;
 	} else if (key[last] == "*") {
 		const l = parseInt(key[last + 1]);
@@ -311,7 +308,7 @@ function randomPos() {
 			nums.push(parseInt(key[last + i + 1]) - 1);
 		}
 		last += l + 1;
-		x = nums[Randomfrom(0, l - 1)];
+		x = nums[randomFrom(0, l - 1)];
 	} else {
 		x = parseInt(key[last]) - 1;
 	}
@@ -487,9 +484,10 @@ function showGameScoreLayer() {
 		"</span> BPM 下的十六分音符哦！";
 	document.getElementById("GameScoreLayer-score").innerHTML = score_text;
 	let bast = cookie("bast-score");
+
 	if (!bast || _gameScore > bast) {
 		bast = _gameScore;
-		cookie("bast-score", bast, 100);
+		saveData("bast-score", bast);
 	}
 
 	document.getElementById("GameScoreLayer-bast").innerHTML =
@@ -528,66 +526,10 @@ function shareText(score) {
 	return "您是外星人嘛？";
 }
 
-function toStr(obj) {
-	if (typeof obj == "object") {
-		return JSON.stringify(obj);
-	} else {
-		return obj;
-	}
-}
-
-function cookie(name, value, time) {
-	if (name) {
-		if (value) {
-			if (time) {
-				const date = new Date();
-				date.setTime(date.getTime() + 864e5 * time),
-					(time = date.toGMTString());
-			}
-			return (
-				(document.cookie =
-					name +
-					"=" +
-					escape(toStr(value)) +
-					(time
-						? "; expires=" +
-							time +
-							(arguments[3]
-								? "; domain=" +
-									arguments[3] +
-									(arguments[4]
-										? "; path=" +
-											arguments[4] +
-											(arguments[5] ? "; secure" : "")
-										: "")
-								: "")
-						: "")),
-				!0
-			);
-		}
-		return (
-			(value = document.cookie.match(
-				"(?:^|;)\\s*" +
-					name.replace(/([-.*+?^${}()|[\]/\\])/g, "\\$1") +
-					"=([^;]*)",
-			)),
-			(value = value && "string" == typeof value[1] ? unescape(value[1]) : !1),
-			(/^(\{|\[).+\}|\]$/.test(value) || /^[0-9]+$/g.test(value)) &&
-				eval("value=" + value),
-			value
-		);
-	}
-	const data = {};
-	value = document.cookie.replace(/\s/g, "").split(";");
-	for (let i = 0; value.length > i; i++)
-		(name = value[i].split("=")),
-			name[1] && (data[name[0]] = unescape(name[1]));
-	return data;
-}
-
 function initSetting() {
-	if (cookie("k")) {
-		const tsmp = parseInt(cookie("k"));
+	const kSetting = loadData("k");
+	if (kSetting) {
+		const tsmp = parseInt(kSetting);
 		if (tsmp != __k) {
 			__k = tsmp;
 			var el = document.getElementById("GameLayerBG");
@@ -608,37 +550,43 @@ function initSetting() {
 			}
 		}
 	}
-	if (cookie("time")) {
-		__Time = parseInt(cookie("time"));
+
+	const timeSetting = loadData("time");
+	if (timeSetting) {
+		__Time = parseInt(timeSetting, 10);
 		GameTimeLayer.innerHTML = creatTimeText(__Time);
 	}
-	if (cookie("key")) {
-		var str = cookie("key");
+
+	const keySetting = loadData("key");
+	if (keySetting) {
+		const str = keySetting;
 		map = {};
 		for (let i = 0; i < __k; ++i) {
-			map[str.charAt(i).toLowerCase()] = i + 1;
+			if (str.charAt(i)) map[str.charAt(i).toLowerCase()] = i + 1;
 		}
 	}
-	if (cookie("note")) {
-		var note = cookie("note");
-		key = note.split("");
+
+	const noteSetting = loadData("note");
+	if (noteSetting) {
+		key = noteSetting.split("");
 		gl();
 	}
-	if (cookie("hide")) {
-		if (cookie("hide").toString() == "1") {
-			hide = true;
-		}
+
+	const hideSetting = loadData("hide");
+	if (hideSetting === "1" || hideSetting === true) {
+		hide = true;
 	}
-	if (cookie("fsj")) {
-		if (cookie("fsj").toString() == "1") {
-			_fsj = true;
-		}
+
+	const fsjSetting = loadData("fsj");
+	if (fsjSetting === "1" || fsjSetting === true) {
+		_fsj = true;
 	}
-	if (cookie("close")) {
-		if (cookie("close").toString() == "1") {
-			_close = true;
-		}
+
+	const closeSetting = loadData("close");
+	if (closeSetting === "1" || closeSetting === true) {
+		_close = true;
 	}
+
 	gameRestart();
 }
 
@@ -684,11 +632,6 @@ function show_setting() {
 	document.getElementById("setting1").style.display = "block";
 }
 
-function parseElement(htmlString) {
-	return new DOMParser().parseFromString(htmlString, "text/html").body
-		.childNodes[0];
-}
-
 function save_cookie() {
 	const str = document.getElementById("keyboard").value;
 	const Time = document.getElementById("timeinput").value;
@@ -709,9 +652,7 @@ function save_cookie() {
 		GameTimeLayer = document.getElementById("GameTimeLayer");
 		GameLayer = [];
 		GameLayer.push(document.getElementById("GameLayer1"));
-		GameLayer[0].children = GameLayer[0].querySelectorAll("div");
 		GameLayer.push(document.getElementById("GameLayer2"));
-		GameLayer[1].children = GameLayer[1].querySelectorAll("div");
 		GameLayerBG = document.getElementById("GameLayerBG");
 		if (GameLayerBG.ontouchstart === null) {
 			GameLayerBG.ontouchstart = gameTapEvent;
@@ -730,35 +671,16 @@ function save_cookie() {
 
 	key = note.split("");
 	gl();
-	cookie("k", __k.toString(), 100);
-	cookie("note", key.join(""), 100);
-	cookie("time", Time, 100);
-	cookie("key", str, 100);
-	if (_close) {
-		cookie("close", "1", 100);
-	} else {
-		cookie("close", "0", 100);
-	}
-	if (hide) {
-		cookie("hide", "1", 100);
-	} else {
-		cookie("hide", "0", 100);
-	}
-	if (_fsj) {
-		cookie("fsj", "1", 100);
-	} else {
-		cookie("fsj", "0", 100);
-	}
-	gameRestart();
-}
 
-function isnull(val) {
-	const str = val.replace(/(^\s*)|(\s*$)/g, "");
-	if (str == "" || str == undefined || str == null) {
-		return true;
-	} else {
-		return false;
-	}
+	saveData("k", __k);
+	saveData("note", key.join(""));
+	saveData("time", Time);
+	saveData("key", str);
+	saveData("close", _close ? "1" : "0");
+	saveData("hide", hide ? "1" : "0");
+	saveData("fsj", _fsj ? "1" : "0");
+
+	gameRestart();
 }
 
 function click(index) {
@@ -777,43 +699,6 @@ function click(index) {
 	};
 
 	gameTapEvent(fakeEvent);
-}
-
-function foreach() {
-	var strCookie = document.cookie;
-	var arrCookie = strCookie.split("; "); // 将多cookie切割为多个名/值对
-	for (var i = 0; i < arrCookie.length; i++) {
-		// 遍历cookie数组，处理每个cookie对
-		var arr = arrCookie[i].split("=");
-		if (arr.length > 0) DelCookie(arr[0]);
-	}
-}
-
-function GetCookieVal(offset) {
-	var endstr = document.cookie.indexOf(";", offset);
-	if (endstr == -1) endstr = document.cookie.length;
-	return decodeURIComponent(document.cookie.substring(offset, endstr));
-}
-
-function DelCookie(name) {
-	var exp = new Date();
-	exp.setTime(exp.getTime() - 1);
-	var cval = GetCookie(name);
-	document.cookie = name + "=" + cval + "; expires=" + exp.toGMTString();
-}
-
-function GetCookie(name) {
-	var arg = name + "=";
-	var alen = arg.length;
-	var clen = document.cookie.length;
-	var i = 0;
-	while (i < clen) {
-		var j = i + alen;
-		if (document.cookie.substring(i, j) == arg) return GetCookieVal(j);
-		i = document.cookie.indexOf(" ", i) + 1;
-		if (i == 0) break;
-	}
-	return null;
 }
 
 function autoset(asss) {
@@ -853,6 +738,6 @@ window.showWelcomeLayer = showWelcomeLayer;
 window.showImg = showImg;
 window.autoset = autoset;
 window.stair = stair;
-window.foreach = foreach;
+window.clearAllData = clearAllData;
 
 init();
