@@ -78,6 +78,12 @@ jobs:
                   base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > $RUNNER_TEMP/keystore.jks
                   echo "storeFile=$RUNNER_TEMP/keystore.jks" >> keystore.properties
 
+            - name: Install cargo-binstall
+              uses: cargo-bins/cargo-binstall@main
+
+            - name: Install Tauri CLI
+              run: cargo binstall tauri-cli --no-confirm --force
+
             - name: Build Android
               run: bun run build:android
 
