@@ -17,11 +17,3 @@ export function parseElement(htmlString: string): HTMLElement {
 	const doc = parser.parseFromString(htmlString, "text/html");
 	return doc.body.childNodes[0] as HTMLElement;
 }
-
-export function toStr(obj: unknown): string {
-	if (typeof obj === "object") {
-		return JSON.stringify(obj);
-	} else {
-		return String(obj);
-	}
-}

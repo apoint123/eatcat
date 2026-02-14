@@ -13,6 +13,8 @@
 		"@biomejs/biome": "^2.3.14",
 		"@tauri-apps/cli": "^2.10.0",
 		"@types/bun": "latest",
+		"@types/createjs": "^0.0.32",
+		"typescript": "^5.9.3",
 		"vite": "^7.3.1"
 	},
 	"dependencies": {

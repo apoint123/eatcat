@@ -1,8 +1,19 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: 待重构 */
+/** biome-ignore-all lint/suspicious/noExplicitAny: 待重构 */
 import "./style.css";
-import { ConfigManager } from "./logic/ConfigManager.ts";
-import { parsePattern } from "./logic/PatternParser.ts";
-import { parseElement, randomFrom } from "./utils/common.ts";
-import { clearAllData, loadData, saveData } from "./utils/storage.ts";
+import { ConfigManager } from "./logic/ConfigManager";
+import { parsePattern } from "./logic/PatternParser";
+import { parseElement, randomFrom } from "./utils/common";
+import { clearAllData, loadData, saveData } from "./utils/storage";
+
+interface GameBlockElement extends HTMLElement {
+	notEmpty?: boolean;
+}
+
+interface GameLayerElement extends HTMLElement {
+	y: number;
+	children: HTMLCollectionOf<GameBlockElement>;
+}
 
 const isDesktop = !navigator.userAgent.match(
 	/(ipad|iphone|ipod|android|windows phone)/i,
@@ -35,8 +46,8 @@ function initStyle() {
 	document.head.appendChild(style);
 }
 
-let map = { d: 1, f: 2, j: 3, k: 4 };
-let key = ["!"];
+let map: Record<string, number> = { d: 1, f: 2, j: 3, k: 4 };
+let key: string[] = ["!"];
 let len = key.length;
 let hide = false;
 let __Time = 20;
@@ -44,14 +55,6 @@ let __k = 4;
 let _close = false;
 let _fsj = false;
 let url = "/image/ClickBefore.png";
-
-function isplaying() {
-	return (
-		document.getElementById("welcome").style.display === "none" &&
-		document.getElementById("GameScoreLayer").style.display === "none" &&
-		document.getElementById("setting1").style.display === "none"
-	);
-}
 
 function updateGamePattern() {
 	const config = ConfigManager.getInstance();
@@ -71,18 +74,18 @@ function generateKeyMap() {
 
 	for (let i = 0; i < laneCount; ++i) {
 		if (mapping[i]) {
-			map[mapping[i].toLowerCase()] = i + 1;
+			map[mapping[i]!.toLowerCase()] = i + 1;
 		}
 	}
 }
 
-let body,
-	blockSize,
-	GameLayer = [],
-	GameLayerBG,
-	touchArea = [],
-	GameTimeLayer;
-let transform, transitionDuration;
+let body: HTMLElement,
+	blockSize: number,
+	GameLayer: GameLayerElement[] = [],
+	GameLayerBG: HTMLElement,
+	touchArea: number[] = [],
+	GameTimeLayer: HTMLElement;
+let transform: string, transitionDuration: string;
 
 function handleBackToHome() {
 	hideGameScoreLayer();
@@ -103,14 +106,14 @@ function init() {
 	transform =
 		typeof body.style.webkitTransform !== "undefined"
 			? "webkitTransform"
-			: typeof body.style.msTransform !== "undefined"
+			: typeof (body.style as any).msTransform !== "undefined"
 				? "msTransform"
 				: "transform";
 	transitionDuration = transform.replace(/ransform/g, "ransitionDuration");
-	GameTimeLayer = document.getElementById("GameTimeLayer");
-	GameLayer.push(document.getElementById("GameLayer1"));
-	GameLayer.push(document.getElementById("GameLayer2"));
-	GameLayerBG = document.getElementById("GameLayerBG");
+	GameTimeLayer = document.getElementById("GameTimeLayer") as HTMLElement;
+	GameLayer.push(document.getElementById("GameLayer1") as GameLayerElement);
+	GameLayer.push(document.getElementById("GameLayer2") as GameLayerElement);
+	GameLayerBG = document.getElementById("GameLayerBG") as HTMLElement;
 	if (GameLayerBG.ontouchstart === null) {
 		GameLayerBG.ontouchstart = gameTapEvent;
 	} else {
@@ -119,7 +122,7 @@ function init() {
 	gameInit();
 	initSetting();
 	window.addEventListener("resize", refreshSize, false);
-	const btn = document.getElementById("ready-btn");
+	const btn = document.getElementById("ready-btn")!;
 	btn.className = "btn btn-primary btn-lg";
 	btn.onclick = () => {
 		closeWelcomeLayer();
@@ -129,14 +132,14 @@ function init() {
 		if (!isDesktop) return;
 		const key = e.key.toLowerCase();
 
-		if (Object.hasOwn(map, key) && isplaying()) {
-			click(map[key]);
-		} else if (
-			key === "r" &&
-			document.getElementById("GameScoreLayer").style.display !== "none"
+		if (
+			GameLayerBG &&
+			(document.getElementById("GameScoreLayer") as HTMLElement).style
+				.display !== "none"
 		) {
-			gameRestart();
-			document.getElementById("GameScoreLayer").style.display = "none";
+			hideGameScoreLayer();
+		} else if (map[key] !== undefined) {
+			click(map[key]);
 		}
 	});
 
@@ -180,14 +183,14 @@ function init() {
 		save_cookie();
 	});
 
-	document.getElementById("upload-input")?.addEventListener("change", (e) => {
-		showImg(e.target);
+	document.getElementById("img-btn")?.addEventListener("change", (e) => {
+		showImg(e.target as HTMLInputElement);
 	});
 
 	const autosetBtns = document.querySelectorAll(".js-autoset");
 	autosetBtns.forEach((btn) => {
 		btn.addEventListener("click", (e) => {
-			const pattern = e.target.getAttribute("data-pattern");
+			const pattern = (e.target as HTMLElement).getAttribute("data-pattern");
 			if (pattern) {
 				autoset(pattern);
 			}
@@ -197,7 +200,7 @@ function init() {
 	document.getElementById("btn-stair")?.addEventListener("click", stair);
 }
 
-let refreshSizeTime;
+let refreshSizeTime: Timer;
 
 function refreshSize() {
 	clearTimeout(refreshSizeTime);
@@ -207,9 +210,9 @@ function refreshSize() {
 function _refreshSize() {
 	countBlockSize();
 	for (let i = 0; i < GameLayer.length; i++) {
-		const box = GameLayer[i];
+		const box = GameLayer[i]!;
 		for (let j = 0; j < box.children.length; j++) {
-			const r = box.children[j],
+			const r = box.children[j] as HTMLElement,
 				rstyle = r.style;
 			rstyle.left = `${(j % __k) * blockSize}px`;
 			rstyle.bottom = `${Math.floor(j / __k) * blockSize}px`;
@@ -217,19 +220,19 @@ function _refreshSize() {
 			rstyle.height = `${blockSize}px`;
 		}
 	}
-	let f, a;
-	if (GameLayer[0].y > GameLayer[1].y) {
-		f = GameLayer[0];
-		a = GameLayer[1];
+	let f: GameLayerElement, a: GameLayerElement;
+	if (GameLayer[0]!.y > GameLayer[1]!.y) {
+		f = GameLayer[0]!;
+		a = GameLayer[1]!;
 	} else {
-		f = GameLayer[1];
-		a = GameLayer[0];
+		f = GameLayer[1]!;
+		a = GameLayer[0]!;
 	}
 	const y = (_gameBBListIndex % 10) * blockSize;
 	f.y = y;
-	f.style[transform] = `translate3D(0,${f.y}px,0)`;
+	f.style[transform as any] = `translate3D(0,${f.y}px,0)`;
 	a.y = -blockSize * Math.floor(f.children.length / __k) + y;
-	a.style[transform] = `translate3D(0,${a.y}px,0)`;
+	a.style[transform as any] = `translate3D(0,${a.y}px,0)`;
 }
 
 function countBlockSize() {
@@ -239,15 +242,15 @@ function countBlockSize() {
 	touchArea[0] = window.innerHeight - blockSize * 0;
 	touchArea[1] = window.innerHeight - blockSize * 3;
 }
-let _gameBBList = [],
+let _gameBBList: { cell: number; id: string }[] = [],
 	_gameBBListIndex = 0,
 	_gameOver = false,
 	_gameStart = false,
-	_gameTime,
-	_gameTimeNum,
-	_gameScore,
-	_date1,
-	deviation_time;
+	_gameTime: any,
+	_gameTimeNum: number,
+	_gameScore: number,
+	_date1: Date,
+	deviation_time: number;
 
 function gameInit() {
 	createjs.Sound.registerSound({
@@ -279,8 +282,8 @@ function gameRestart() {
 	_gameTimeNum = __Time;
 	GameTimeLayer.innerHTML = creatTimeText(_gameTimeNum);
 	countBlockSize();
-	refreshGameLayer(GameLayer[0]);
-	refreshGameLayer(GameLayer[1], 1);
+	refreshGameLayer(GameLayer[0]!);
+	refreshGameLayer(GameLayer[1]!, 1);
 }
 
 function gameStart() {
@@ -316,7 +319,7 @@ function gameTime() {
 	}
 }
 
-function creatTimeText(n) {
+function creatTimeText(n: number) {
 	return `&nbsp;剩余时间:${n}`;
 }
 
@@ -345,31 +348,31 @@ function randomPos() {
 	} else if (key[last] === "&") {
 		x = __k - 1 - lkey;
 	} else if (key[last] === "+") {
-		const num = parseInt(key[last + 1], 10);
+		const num = parseInt(key[last + 1]!, 10);
 		last++;
 		x = (lkey + num) % __k;
 	} else if (key[last] === "-") {
-		const num = parseInt(key[last + 1], 10);
+		const num = parseInt(key[last + 1]!, 10);
 		last++;
 		x = (lkey - num + __k) % __k;
 	} else if (key[last] === "%") {
-		const num1 = parseInt(key[last + 1], 10) - 1;
-		let num2 = parseInt(key[last + 2], 10) - 1;
+		const num1 = parseInt(key[last + 1]!, 10) - 1;
+		let num2 = parseInt(key[last + 2]!, 10) - 1;
 		if (num2 < num1) {
 			num2 += __k;
 		}
 		x = randomFrom(num1, num2) % __k;
 		last += 2;
 	} else if (key[last] === "*") {
-		const l = parseInt(key[last + 1], 10);
+		const l = parseInt(key[last + 1]!, 10);
 		const nums = [];
 		for (let i = 1; i <= l; ++i) {
-			nums.push(parseInt(key[last + i + 1], 10) - 1);
+			nums.push(parseInt(key[last + i + 1]!, 10) - 1);
 		}
 		last += l + 1;
-		x = nums[randomFrom(0, l - 1)];
+		x = nums[randomFrom(0, l - 1)]!;
 	} else {
-		x = parseInt(key[last], 10) - 1;
+		x = parseInt(key[last]!, 10) - 1;
 	}
 	lkey = x;
 	last++;
@@ -379,10 +382,14 @@ function randomPos() {
 	return x;
 }
 
-function refreshGameLayer(box, loop, offset) {
+function refreshGameLayer(
+	box: GameLayerElement,
+	loop?: number | boolean,
+	offset?: number,
+) {
 	let i = randomPos() + (loop ? 0 : __k);
 	for (let j = 0; j < box.children.length; j++) {
-		const r = box.children[j],
+		const r = box.children[j] as GameBlockElement,
 			rstyle = r.style;
 		rstyle.left = `${(j % __k) * blockSize}px`;
 		rstyle.bottom = `${Math.floor(j / __k) * blockSize}px`;
@@ -412,41 +419,41 @@ function refreshGameLayer(box, loop, offset) {
 		box.y =
 			-blockSize *
 			(Math.floor(box.children.length / __k) + (offset || 0)) *
-			loop;
+			Number(loop);
 		setTimeout(() => {
-			box.style[transform] = `translate3D(0,${box.y}px,0)`;
+			box.style[transform as any] = `translate3D(0,${box.y}px,0)`;
 			setTimeout(() => {
 				box.style.display = "block";
 			}, 0);
 		}, 0);
 	} else {
 		box.y = 0;
-		box.style[transform] = `translate3D(0,${box.y}px,0)`;
+		box.style[transform as any] = `translate3D(0,${box.y}px,0)`;
 	}
-	box.style[transitionDuration] = "180ms";
+	box.style[transitionDuration as any] = "180ms";
 }
 
 function gameLayerMoveNextRow() {
 	for (let i = 0; i < GameLayer.length; i++) {
-		const g = GameLayer[i];
+		const g = GameLayer[i]!;
 		g.y += blockSize;
 		if (g.y > blockSize * Math.floor(g.children.length / __k)) {
 			refreshGameLayer(g, 1, -1);
 		} else {
-			g.style[transform] = `translate3D(0,${g.y}px,0)`;
+			g.style[transform as any] = `translate3D(0,${g.y}px,0)`;
 		}
 	}
 }
 
-function getEventPosition(e, container) {
-	let clientX, clientY;
+function getEventPosition(e: MouseEvent | TouchEvent, container: HTMLElement) {
+	let clientX: number, clientY: number;
 
-	if (e.touches && e.touches.length > 0) {
-		clientX = e.touches[0].clientX;
-		clientY = e.touches[0].clientY;
+	if ("touches" in e && e.touches && e.touches.length > 0) {
+		clientX = e.touches[0]!.clientX;
+		clientY = e.touches[0]!.clientY;
 	} else {
-		clientX = e.clientX;
-		clientY = e.clientY;
+		clientX = (e as MouseEvent).clientX;
+		clientY = (e as MouseEvent).clientY;
 	}
 
 	const rect = container.getBoundingClientRect();
@@ -456,7 +463,7 @@ function getEventPosition(e, container) {
 	};
 }
 
-function gameTapEvent(e) {
+function gameTapEvent(e: MouseEvent | TouchEvent) {
 	if (_gameOver) {
 		return false;
 	}
@@ -470,7 +477,7 @@ function gameTapEvent(e) {
 
 	const clickedLane = Math.floor(x / blockSize);
 
-	const isYValid = _fsj || (y <= touchArea[0] && y >= touchArea[1]);
+	const isYValid = _fsj || (y <= touchArea[0]! && y >= touchArea[1]!);
 
 	if (!isYValid) {
 		return false;
@@ -503,8 +510,8 @@ function gameTapEvent(e) {
 				createjs.Sound.play("err");
 			}
 
-			if (e.target?.classList.contains("block")) {
-				e.target.classList.add("bad");
+			if ((e.target as HTMLElement)?.classList.contains("block")) {
+				(e.target as HTMLElement).classList.add("bad");
 			}
 
 			gameOver();
@@ -542,22 +549,24 @@ function createGameLayer() {
 }
 
 function closeWelcomeLayer() {
-	const l = document.getElementById("welcome");
+	const l = document.getElementById("welcome")!;
 	l.style.display = "none";
 }
 
 function showWelcomeLayer() {
-	const l = document.getElementById("welcome");
+	const l = document.getElementById("welcome")!;
 	l.style.display = "block";
 }
 
 function showGameScoreLayer() {
-	const l = document.getElementById("GameScoreLayer");
-	const c = document
-		.getElementById(_gameBBList[_gameBBListIndex - 1].id)
-		.className.match(_ttreg)[1];
+	const l = document.getElementById("GameScoreLayer")!;
+	const c = (
+		document.getElementById(
+			_gameBBList[_gameBBListIndex - 1]!.id,
+		) as HTMLElement
+	).className.match(_ttreg)![1];
 	l.className = l.className.replace(/bgc\d/, `bgc${c}`);
-	document.getElementById("GameScoreLayer-text").innerHTML = hide
+	document.getElementById("GameScoreLayer-text")!.innerHTML = hide
 		? ""
 		: `<span style='color:red;'>${shareText(_gameScore)}</span>`;
 	let score_text = "您坚持了 ";
@@ -576,27 +585,27 @@ function showGameScoreLayer() {
 		"<br>相当于 <span style='color:red;'>" +
 		((_gameScore * 15000) / deviation_time).toFixed(2) +
 		"</span> BPM 下的十六分音符哦！";
-	document.getElementById("GameScoreLayer-score").innerHTML = score_text;
-	let bast = loadData("bast-score");
+	document.getElementById("GameScoreLayer-score")!.innerHTML = score_text;
+	let bast = loadData<number>("bast-score");
 
 	if (!bast || _gameScore > bast) {
 		bast = _gameScore;
 		saveData("bast-score", bast);
 	}
 
-	document.getElementById("GameScoreLayer-bast").innerHTML =
+	document.getElementById("GameScoreLayer-bast")!.innerHTML =
 		`历史最佳得分 <span style='color:red;'>${bast}</span>`;
 	const now =
 		"您的自定义键型为：" +
 		"<span style='color:red;'>" +
 		key.join("") +
 		"</span>";
-	document.getElementById("now").innerHTML = now;
+	document.getElementById("now")!.innerHTML = now;
 	l.classList.add("visible");
 }
 
 function hideGameScoreLayer() {
-	const l = document.getElementById("GameScoreLayer");
+	const l = document.getElementById("GameScoreLayer")!;
 	l.classList.remove("visible");
 }
 
@@ -605,7 +614,7 @@ function replayBtn() {
 	hideGameScoreLayer();
 }
 
-function shareText(score) {
+function shareText(score: number) {
 	deviation_time = date2.getTime() - _date1.getTime();
 	if (score <= 2.5 * __Time) return "加油！我相信您可以的！";
 	if (score <= 5 * __Time) return "^_^ 加把劲，底力大王就是您！";
@@ -618,18 +627,24 @@ function initSetting() {
 	const config = ConfigManager.getInstance();
 
 	const laneCount = config.get("laneCount");
-	document.getElementById("k").value = laneCount.toString();
+	(document.getElementById("k") as HTMLInputElement).value =
+		laneCount.toString();
 
-	document.getElementById("keyboard").value = config.get("keyMapping").join("");
+	(document.getElementById("keyboard") as HTMLInputElement).value = config
+		.get("keyMapping")
+		.join("");
 
-	document.getElementById("timeinput").value = config
+	(document.getElementById("timeinput") as HTMLInputElement).value = config
 		.get("timeLimit")
 		.toString();
-	document.getElementById("note").value = config.get("dropPattern");
+	(document.getElementById("note") as HTMLInputElement).value =
+		config.get("dropPattern");
 
-	document.getElementById("hide").checked = config.get("hideEndText");
-	document.getElementById("close").checked = config.get("isSoundMuted");
-	document.getElementById("fsj").checked = config.get(
+	(document.getElementById("hide") as HTMLInputElement).checked =
+		config.get("hideEndText");
+	(document.getElementById("close") as HTMLInputElement).checked =
+		config.get("isSoundMuted");
+	(document.getElementById("fsj") as HTMLInputElement).checked = config.get(
 		"enableVerticalJudgement",
 	);
 
@@ -638,23 +653,23 @@ function initSetting() {
 	gameRestart();
 }
 
-function show_btn(i) {
-	document.getElementById("tt").style.display = "block";
-	document.getElementById("ttt").style.display = "block";
-	document.getElementById("btn_group").style.display = "block";
-	document.getElementById("btn_group2").style.display = "block";
-	document.getElementById(`setting${i.toString()}`).style.display = "none";
+function show_btn(i: number) {
+	document.getElementById("tt")!.style.display = "block";
+	document.getElementById("ttt")!.style.display = "block";
+	document.getElementById("btn_group")!.style.display = "block";
+	document.getElementById("btn_group2")!.style.display = "block";
+	document.getElementById(`setting${i.toString()}`)!.style.display = "none";
 }
 
-function nxtpage(i) {
-	document.getElementById(`setting${i.toString()}`).style.display = "none";
-	document.getElementById(`setting${(i + 1).toString()}`).style.display =
+function nxtpage(i: number) {
+	document.getElementById(`setting${i.toString()}`)!.style.display = "none";
+	document.getElementById(`setting${(i + 1).toString()}`)!.style.display =
 		"block";
 }
 
-function lstpage(i) {
-	document.getElementById(`setting${i.toString()}`).style.display = "none";
-	document.getElementById(`setting${(i - 1).toString()}`).style.display =
+function lstpage(i: number) {
+	document.getElementById(`setting${i.toString()}`)!.style.display = "none";
+	document.getElementById(`setting${(i - 1).toString()}`)!.style.display =
 		"block";
 }
 
@@ -664,43 +679,48 @@ function show_setting() {
 		str.push("a");
 	}
 	for (const ke in map) {
-		str[map[ke] - 1] = ke.charAt(0);
+		str[map[ke]! - 1] = ke.charAt(0);
 	}
-	document.getElementById("k").value = __k.toString();
-	document.getElementById("keyboard").value = str.join("");
-	document.getElementById("timeinput").value = __Time.toString();
-	document.getElementById("note").value = key.join("");
-	document.getElementById("hide").checked = hide;
-	document.getElementById("close").checked = _close;
-	document.getElementById("fsj").checked = _fsj;
-	document.getElementById("btn_group").style.display = "none";
-	document.getElementById("btn_group2").style.display = "none";
-	document.getElementById("tt").style.display = "none";
-	document.getElementById("ttt").style.display = "none";
-	document.getElementById("setting1").style.display = "block";
+	(document.getElementById("k") as HTMLInputElement).value = __k.toString();
+	(document.getElementById("keyboard") as HTMLInputElement).value =
+		str.join("");
+	(document.getElementById("timeinput") as HTMLInputElement).value =
+		__Time.toString();
+	(document.getElementById("note") as HTMLInputElement).value = key.join("");
+	(document.getElementById("hide") as HTMLInputElement).checked = hide;
+	(document.getElementById("close") as HTMLInputElement).checked = _close;
+	(document.getElementById("fsj") as HTMLInputElement).checked = _fsj;
+	document.getElementById("btn_group")!.style.display = "none";
+	document.getElementById("btn_group2")!.style.display = "none";
+	document.getElementById("tt")!.style.display = "none";
+	document.getElementById("ttt")!.style.display = "none";
+	document.getElementById("setting1")!.style.display = "block";
 }
 
 function save_cookie() {
-	const str = document.getElementById("keyboard").value;
-	const Time = document.getElementById("timeinput").value;
-	hide = document.getElementById("hide").checked;
-	_close = document.getElementById("close").checked;
-	_fsj = document.getElementById("fsj").checked;
+	const str = (document.getElementById("keyboard") as HTMLInputElement).value;
+	const Time = (document.getElementById("timeinput") as HTMLInputElement).value;
+	hide = (document.getElementById("hide") as HTMLInputElement).checked;
+	_close = (document.getElementById("close") as HTMLInputElement).checked;
+	_fsj = (document.getElementById("fsj") as HTMLInputElement).checked;
 
-	const tsmp = parseInt(document.getElementById("k").value, 10);
+	const tsmp = parseInt(
+		(document.getElementById("k") as HTMLInputElement).value,
+		10,
+	);
 	if (tsmp !== __k) {
 		__k = tsmp;
-		const el = document.getElementById("GameLayerBG");
-		const fa = el.parentNode;
+		const el = document.getElementById("GameLayerBG")!;
+		const fa = el.parentNode!;
 		fa.removeChild(el);
 		fa.removeChild(GameTimeLayer);
 		fa.appendChild(parseElement(createGameLayer()));
 		fa.appendChild(parseElement('<div id = "GameTimeLayer"></div>'));
-		GameTimeLayer = document.getElementById("GameTimeLayer");
+		GameTimeLayer = document.getElementById("GameTimeLayer") as HTMLElement;
 		GameLayer = [];
-		GameLayer.push(document.getElementById("GameLayer1"));
-		GameLayer.push(document.getElementById("GameLayer2"));
-		GameLayerBG = document.getElementById("GameLayerBG");
+		GameLayer.push(document.getElementById("GameLayer1") as GameLayerElement);
+		GameLayer.push(document.getElementById("GameLayer2") as GameLayerElement);
+		GameLayerBG = document.getElementById("GameLayerBG") as HTMLElement;
 		if (GameLayerBG.ontouchstart === null) {
 			GameLayerBG.ontouchstart = gameTapEvent;
 		} else {
@@ -729,25 +749,27 @@ function save_cookie() {
 	gameRestart();
 }
 
-function click(laneIndex) {
+function click(laneIndex: number) {
 	const lane = laneIndex - 1;
 	const centerX = lane * blockSize + blockSize / 2;
-	const centerY = (touchArea[0] + touchArea[1]) / 2;
+	const centerY = (touchArea[0]! + touchArea[1]!) / 2;
 
 	const mockEvent = {
 		clientX:
 			centerX +
-			document.getElementById("gameBody").getBoundingClientRect().left,
+			document.getElementById("gameBody")!.getBoundingClientRect().left,
 		clientY:
-			centerY + document.getElementById("gameBody").getBoundingClientRect().top,
+			centerY +
+			document.getElementById("gameBody")!.getBoundingClientRect().top,
 		preventDefault: () => {},
 		target: null,
+		touches: [],
 	};
 
-	gameTapEvent(mockEvent);
+	gameTapEvent(mockEvent as unknown as TouchEvent);
 }
 
-function autoset(pattern) {
+function autoset(pattern: string) {
 	ConfigManager.getInstance().update({
 		dropPattern: pattern,
 	});
@@ -757,9 +779,9 @@ function autoset(pattern) {
 	gameRestart();
 }
 
-function showImg(input) {
-	var file = input.files[0];
-	url = window.URL.createObjectURL(file);
+function showImg(input: HTMLInputElement) {
+	var file = input.files![0];
+	url = window.URL.createObjectURL(file!);
 }
 
 function stair() {
