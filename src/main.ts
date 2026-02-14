@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: 待重构 */
 /** biome-ignore-all lint/suspicious/noExplicitAny: 待重构 */
+import "bootstrap/dist/css/bootstrap.min.css";
 import "./style.css";
 import { ConfigManager } from "./logic/ConfigManager";
 import { GameState, GameStatus } from "./logic/GameState";
@@ -85,6 +86,25 @@ let _gameTime: ReturnType<typeof setInterval>;
 let refreshSizeTime: Timer;
 
 const gameState = new GameState();
+
+const sounds = {
+	err: new Audio("/audio/err.mp3"),
+	end: new Audio("/audio/end.mp3"),
+	tap: new Audio("/audio/tap.mp3"),
+};
+
+function preloadAudio() {
+	for (const sound of Object.values(sounds)) {
+		sound.load();
+	}
+}
+
+function playSound(audio: HTMLAudioElement) {
+	audio.currentTime = 0;
+	audio.play().catch((e) => {
+		console.log(e);
+	});
+}
 
 function handleBackToHome() {
 	hideGameScoreLayer();
@@ -253,18 +273,7 @@ function countBlockSize() {
 }
 
 function gameInit() {
-	createjs.Sound.registerSound({
-		src: "/audio/err.mp3",
-		id: "err",
-	});
-	createjs.Sound.registerSound({
-		src: "/audio/end.mp3",
-		id: "end",
-	});
-	createjs.Sound.registerSound({
-		src: "/audio/tap.mp3",
-		id: "tap",
-	});
+	preloadAudio();
 	gameRestart();
 }
 
@@ -302,7 +311,7 @@ function gameTime() {
 		gameOver();
 		GameLayerBG.className += " flash";
 		if (!config.get("isSoundMuted")) {
-			createjs.Sound.play("end");
+			playSound(sounds.end);
 		}
 	} else {
 		GameTimeLayer.innerHTML = creatTimeText(gameState.remainingTime);
@@ -491,7 +500,7 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 		}
 
 		if (!config.get("isSoundMuted")) {
-			createjs.Sound.play("tap");
+			playSound(sounds.tap);
 		}
 
 		const targetNode = document.getElementById(currentTarget.id);
@@ -507,7 +516,7 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 	} else {
 		if (gameState.status === GameStatus.PLAYING) {
 			if (!config.get("isSoundMuted")) {
-				createjs.Sound.play("err");
+				playSound(sounds.err);
 			}
 
 			if ((e.target as HTMLElement)?.classList.contains("block")) {
