@@ -1,4 +1,6 @@
 import "./style.css";
+import { ConfigManager } from "./logic/ConfigManager.ts";
+import { parsePattern } from "./logic/PatternParser.ts";
 import { parseElement, randomFrom } from "./utils/common.ts";
 import { clearAllData, loadData, saveData } from "./utils/storage.ts";
 
@@ -35,7 +37,6 @@ function initStyle() {
 
 let map = { d: 1, f: 2, j: 3, k: 4 };
 let key = ["!"];
-const chs = ["@", "!", "#", "&", "+", "-", "%", "*"];
 let len = key.length;
 let hide = false;
 let __Time = 20;
@@ -52,21 +53,27 @@ function isplaying() {
 	);
 }
 
-function gl() {
-	const tmp = [];
+function updateGamePattern() {
+	const config = ConfigManager.getInstance();
+	const patternStr = config.get("dropPattern");
+	const laneCount = config.get("laneCount");
+	key = parsePattern(patternStr, laneCount);
+
 	len = key.length;
-	for (let i = 0; i < len; ++i) {
-		if (chs.includes(key[i]) || (key[i] >= "1" && key[i] <= __k.toString())) {
-			tmp.push(key[i]);
-		} else if (key[i] === "！") {
-			tmp.push("!");
+}
+
+function generateKeyMap() {
+	const config = ConfigManager.getInstance();
+	const mapping = config.get("keyMapping");
+	const laneCount = config.get("laneCount");
+
+	map = {};
+
+	for (let i = 0; i < laneCount; ++i) {
+		if (mapping[i]) {
+			map[mapping[i].toLowerCase()] = i + 1;
 		}
 	}
-	key = tmp;
-	if (key.length === 0) {
-		key = ["!"];
-	}
-	len = key.length;
 }
 
 let body,
@@ -76,6 +83,12 @@ let body,
 	touchArea = [],
 	GameTimeLayer;
 let transform, transitionDuration;
+
+function handleBackToHome() {
+	hideGameScoreLayer();
+	showWelcomeLayer();
+	gameRestart();
+}
 
 function init() {
 	initStyle();
@@ -126,6 +139,62 @@ function init() {
 			document.getElementById("GameScoreLayer").style.display = "none";
 		}
 	});
+
+	document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+	document.getElementById("btn-replay")?.addEventListener("click", replayBtn);
+	document
+		.getElementById("btn-back-home")
+		?.addEventListener("click", handleBackToHome);
+
+	document.getElementById("btn-link-new")?.addEventListener("click", () => {
+		window.location.href = "https://github.com/UlyssesZha/eatcat";
+	});
+	document.getElementById("btn-link-old")?.addEventListener("click", () => {
+		window.location.href = "https://github.com/arcxingye/EatKano";
+	});
+	document.getElementById("btn-link-author")?.addEventListener("click", () => {
+		window.location.href = "https://space.bilibili.com/470549205";
+	});
+
+	document
+		.getElementById("btn-show-setting")
+		?.addEventListener("click", show_setting);
+	document
+		.getElementById("btn-clear-data")
+		?.addEventListener("click", clearAllData);
+
+	document.getElementById("btn-save-p1")?.addEventListener("click", () => {
+		show_btn(1);
+		save_cookie();
+	});
+	document.getElementById("btn-next-p1")?.addEventListener("click", () => {
+		nxtpage(1);
+	});
+
+	document.getElementById("btn-prev-p2")?.addEventListener("click", () => {
+		lstpage(2);
+	});
+	document.getElementById("btn-save-p2")?.addEventListener("click", () => {
+		show_btn(2);
+		save_cookie();
+	});
+
+	document.getElementById("upload-input")?.addEventListener("change", (e) => {
+		showImg(e.target);
+	});
+
+	const autosetBtns = document.querySelectorAll(".js-autoset");
+	autosetBtns.forEach((btn) => {
+		btn.addEventListener("click", (e) => {
+			const pattern = e.target.getAttribute("data-pattern");
+			if (pattern) {
+				autoset(pattern);
+			}
+		});
+	});
+
+	document.getElementById("btn-stair")?.addEventListener("click", stair);
 }
 
 let refreshSizeTime;
@@ -536,12 +605,6 @@ function replayBtn() {
 	hideGameScoreLayer();
 }
 
-function backBtn() {
-	gameRestart();
-	hideGameScoreLayer();
-	showWelcomeLayer();
-}
-
 function shareText(score) {
 	deviation_time = date2.getTime() - _date1.getTime();
 	if (score <= 2.5 * __Time) return "加油！我相信您可以的！";
@@ -552,66 +615,26 @@ function shareText(score) {
 }
 
 function initSetting() {
-	const kSetting = loadData("k");
-	if (kSetting) {
-		const tsmp = parseInt(kSetting, 10);
-		if (tsmp !== __k) {
-			__k = tsmp;
-			const el = document.getElementById("GameLayerBG");
-			const fa = el.parentNode;
-			fa.removeChild(el);
-			fa.removeChild(GameTimeLayer);
-			fa.appendChild(parseElement(createGameLayer()));
-			fa.appendChild(parseElement('<div id = "GameTimeLayer"></div>'));
-			GameTimeLayer = document.getElementById("GameTimeLayer");
-			GameLayer = [];
-			GameLayer.push(document.getElementById("GameLayer1"));
-			GameLayer.push(document.getElementById("GameLayer2"));
-			GameLayerBG = document.getElementById("GameLayerBG");
-			if (GameLayerBG.ontouchstart === null) {
-				GameLayerBG.ontouchstart = gameTapEvent;
-			} else {
-				GameLayerBG.onmousedown = gameTapEvent;
-			}
-		}
-	}
+	const config = ConfigManager.getInstance();
 
-	const timeSetting = loadData("time");
-	if (timeSetting) {
-		__Time = parseInt(timeSetting, 10);
-		GameTimeLayer.innerHTML = creatTimeText(__Time);
-	}
+	const laneCount = config.get("laneCount");
+	document.getElementById("k").value = laneCount.toString();
 
-	const keySetting = loadData("key");
-	if (keySetting) {
-		const str = keySetting;
-		map = {};
-		for (let i = 0; i < __k; ++i) {
-			if (str.charAt(i)) map[str.charAt(i).toLowerCase()] = i + 1;
-		}
-	}
+	document.getElementById("keyboard").value = config.get("keyMapping").join("");
 
-	const noteSetting = loadData("note");
-	if (noteSetting) {
-		key = noteSetting.split("");
-		gl();
-	}
+	document.getElementById("timeinput").value = config
+		.get("timeLimit")
+		.toString();
+	document.getElementById("note").value = config.get("dropPattern");
 
-	const hideSetting = loadData("hide");
-	if (hideSetting === "1" || hideSetting === true) {
-		hide = true;
-	}
+	document.getElementById("hide").checked = config.get("hideEndText");
+	document.getElementById("close").checked = config.get("isSoundMuted");
+	document.getElementById("fsj").checked = config.get(
+		"enableVerticalJudgement",
+	);
 
-	const fsjSetting = loadData("fsj");
-	if (fsjSetting === "1" || fsjSetting === true) {
-		_fsj = true;
-	}
-
-	const closeSetting = loadData("close");
-	if (closeSetting === "1" || closeSetting === true) {
-		_close = true;
-	}
-
+	generateKeyMap();
+	updateGamePattern();
 	gameRestart();
 }
 
@@ -660,7 +683,6 @@ function show_setting() {
 function save_cookie() {
 	const str = document.getElementById("keyboard").value;
 	const Time = document.getElementById("timeinput").value;
-	const note = document.getElementById("note").value;
 	hide = document.getElementById("hide").checked;
 	_close = document.getElementById("close").checked;
 	_fsj = document.getElementById("fsj").checked;
@@ -694,8 +716,7 @@ function save_cookie() {
 	__Time = parseInt(Time, 10);
 	GameTimeLayer.innerHTML = creatTimeText(__Time);
 
-	key = note.split("");
-	gl();
+	updateGamePattern();
 
 	saveData("k", __k);
 	saveData("note", key.join(""));
@@ -726,9 +747,13 @@ function click(laneIndex) {
 	gameTapEvent(mockEvent);
 }
 
-function autoset(asss) {
-	key = asss.split("");
-	len = key.length;
+function autoset(pattern) {
+	ConfigManager.getInstance().update({
+		dropPattern: pattern,
+	});
+
+	updateGamePattern();
+
 	gameRestart();
 }
 
@@ -738,31 +763,22 @@ function showImg(input) {
 }
 
 function stair() {
-	key = [];
-	for (let i = 1; i < __k; ++i) {
-		key.push(i.toString());
+	const k = ConfigManager.getInstance().get("laneCount");
+	let pattern = "";
+
+	for (let i = 1; i < k; ++i) {
+		pattern += i.toString();
 	}
-	for (let i = __k; i > 1; --i) {
-		key.push(i.toString());
+	for (let i = k; i > 1; --i) {
+		pattern += i.toString();
 	}
-	len = (__k - 1) * 2;
+
+	ConfigManager.getInstance().update({
+		dropPattern: pattern,
+	});
+	updateGamePattern();
+
 	gameRestart();
 }
-
-window.init = init;
-window.gameRestart = gameRestart;
-window.replayBtn = replayBtn;
-window.backBtn = backBtn;
-window.show_setting = show_setting;
-window.save_cookie = save_cookie;
-window.show_btn = show_btn;
-window.nxtpage = nxtpage;
-window.lstpage = lstpage;
-window.hideGameScoreLayer = hideGameScoreLayer;
-window.showWelcomeLayer = showWelcomeLayer;
-window.showImg = showImg;
-window.autoset = autoset;
-window.stair = stair;
-window.clearAllData = clearAllData;
 
 init();

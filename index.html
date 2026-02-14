@@ -21,7 +21,7 @@
 		<script type="module" src="./src/main.js"></script>
 	</head>
 
-	<body oncontextmenu="self.event.returnValue=false">
+	<body>
 		<div id="gameBody"></div>
 		<div id="GameScoreLayer" class="BBOX SHADE bgc1">
 			<div
@@ -32,38 +32,34 @@
 				<div id="GameScoreLayer-bast">最佳</div>
 				<div id="now">键型</div>
 				<div id="nosw">电脑端玩家按下R键可一键重开哦~</div>
-				<button
-					type="button"
-					class="btn btn-secondary btn-lg"
-					onclick="replayBtn()"
-				>
+				<button type="button" class="btn btn-secondary btn-lg" id="btn-replay">
 					重来
 				</button>
 				<button
 					type="button"
 					class="btn btn-secondary btn-lg"
-					onclick="hideGameScoreLayer();showWelcomeLayer();gameRestart()"
+					id="btn-back-home"
 				>
 					返回主页
 				</button>
 				<button
 					type="button"
 					class="btn btn-secondary btn-lg"
-					onclick="window.location.href='https://github.com/UlyssesZha/eatcat'"
+					id="btn-link-new"
 				>
 					源代码(改版后)
 				</button>
 				<button
 					type="button"
 					class="btn btn-secondary btn-lg"
-					onclick="window.location.href='https://github.com/arcxingye/EatKano'"
+					id="btn-link-old"
 				>
 					源代码(原版)
 				</button>
 				<button
 					type="button"
 					class="btn btn-secondary btn-lg"
-					onclick="window.location.href='https://space.bilibili.com/470549205'"
+					id="btn-link-author"
 				>
 					作者的B站主页
 				</button>
@@ -116,7 +112,7 @@
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="show_setting()"
+							id="btn-show-setting"
 						>
 							游戏设置
 						</button>
@@ -125,7 +121,7 @@
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="clearAllData()"
+							id="btn-clear-data"
 						>
 							若出现了bug点击此按钮后刷新界面
 						</button>
@@ -134,34 +130,31 @@
 					</div>
 
 					<div id="btn_group2" style="display: block;">
-						<h2 style="font-size:1.0em; color:#fff; line-height:1.5em;">
-							一键设置特殊键型（若按键全部消失请刷新界面）
-						</h2>
 						<button
 							type="button"
-							class="btn btn-secondary btn-lg"
-							onclick="autoset('!')"
+							class="btn btn-secondary btn-lg js-autoset"
+							data-pattern="!"
 						>
 							纯随机
 						</button>
 						<button
 							type="button"
-							class="btn btn-secondary btn-lg"
-							onclick="autoset('@')"
+							class="btn btn-secondary btn-lg js-autoset"
+							data-pattern="@"
 						>
 							无纵连的随机
 						</button>
 						<button
 							type="button"
-							class="btn btn-secondary btn-lg"
-							onclick="autoset('@#')"
+							class="btn btn-secondary btn-lg js-autoset"
+							data-pattern="@#"
 						>
 							短纵
 						</button>
 						<button
 							type="button"
-							class="btn btn-secondary btn-lg"
-							onclick="autoset('2')"
+							class="btn btn-secondary btn-lg js-autoset"
+							data-pattern="2"
 						>
 							全纵连
 						</button>
@@ -169,22 +162,24 @@
 						<br>
 						<button
 							type="button"
-							class="btn btn-secondary btn-lg"
-							onclick="autoset('32')"
+							class="btn btn-secondary btn-lg js-autoset"
+							data-pattern="32"
 						>
 							交互
 						</button>
+
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="stair()"
+							id="btn-stair"
 						>
 							楼梯
 						</button>
+
 						<button
 							type="button"
-							class="btn btn-secondary btn-lg"
-							onclick="autoset('@##')"
+							class="btn btn-secondary btn-lg js-autoset"
+							data-pattern="@##"
 						>
 							三纵
 						</button>
@@ -240,14 +235,14 @@
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="show_btn(1);save_cookie();"
+							id="btn-save-p1"
 						>
 							完成
 						</button>
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="nxtpage(1);"
+							id="btn-next-p1"
 						>
 							下一页
 						</button>
@@ -284,14 +279,14 @@
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="lstpage(2);"
+							id="btn-prev-p2"
 						>
 							上一页
 						</button>
 						<button
 							type="button"
 							class="btn btn-secondary btn-lg"
-							onclick="show_btn(2);save_cookie();"
+							id="btn-save-p2"
 						>
 							完成
 						</button>
