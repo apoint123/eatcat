@@ -49,15 +49,9 @@ function initStyle() {
 let map: Record<string, number> = { d: 1, f: 2, j: 3, k: 4 };
 let key: string[] = ["!"];
 let len = key.length;
-let hide = false;
-let __Time = 20;
-let __k = 4;
-let _close = false;
-let _fsj = false;
-let url = "/image/ClickBefore.png";
+const config = ConfigManager.getInstance();
 
 function updateGamePattern() {
-	const config = ConfigManager.getInstance();
 	const patternStr = config.get("dropPattern");
 	const laneCount = config.get("laneCount");
 	key = parsePattern(patternStr, laneCount);
@@ -66,7 +60,6 @@ function updateGamePattern() {
 }
 
 function generateKeyMap() {
-	const config = ConfigManager.getInstance();
 	const mapping = config.get("keyMapping");
 	const laneCount = config.get("laneCount");
 
@@ -132,12 +125,17 @@ function init() {
 		if (!isDesktop) return;
 		const key = e.key.toLowerCase();
 
-		if (
-			GameLayerBG &&
-			(document.getElementById("GameScoreLayer") as HTMLElement).style
-				.display !== "none"
-		) {
+		if (key === "r") {
+			gameRestart();
 			hideGameScoreLayer();
+			return;
+		}
+
+		const scoreLayer = document.getElementById("GameScoreLayer") as HTMLElement;
+		const isScoreLayerVisible = scoreLayer.classList.contains("visible");
+
+		if (GameLayerBG && isScoreLayerVisible) {
+			// hideGameScoreLayer();
 		} else if (map[key] !== undefined) {
 			click(map[key]);
 		}
@@ -183,8 +181,11 @@ function init() {
 		save_cookie();
 	});
 
-	document.getElementById("img-btn")?.addEventListener("change", (e) => {
-		showImg(e.target as HTMLInputElement);
+	document.getElementById("upload-input")?.addEventListener("change", (e) => {
+		const target = e.target as HTMLInputElement;
+		if (target.files && target.files.length > 0) {
+			showImg(target);
+		}
 	});
 
 	const autosetBtns = document.querySelectorAll(".js-autoset");
@@ -208,14 +209,16 @@ function refreshSize() {
 }
 
 function _refreshSize() {
+	const laneCount = config.get("laneCount");
+
 	countBlockSize();
 	for (let i = 0; i < GameLayer.length; i++) {
 		const box = GameLayer[i]!;
 		for (let j = 0; j < box.children.length; j++) {
 			const r = box.children[j] as HTMLElement,
 				rstyle = r.style;
-			rstyle.left = `${(j % __k) * blockSize}px`;
-			rstyle.bottom = `${Math.floor(j / __k) * blockSize}px`;
+			rstyle.left = `${(j % laneCount) * blockSize}px`;
+			rstyle.bottom = `${Math.floor(j / laneCount) * blockSize}px`;
 			rstyle.width = `${blockSize}px`;
 			rstyle.height = `${blockSize}px`;
 		}
@@ -231,12 +234,14 @@ function _refreshSize() {
 	const y = (_gameBBListIndex % 10) * blockSize;
 	f.y = y;
 	f.style[transform as any] = `translate3D(0,${f.y}px,0)`;
-	a.y = -blockSize * Math.floor(f.children.length / __k) + y;
+	a.y = -blockSize * Math.floor(f.children.length / laneCount) + y;
 	a.style[transform as any] = `translate3D(0,${a.y}px,0)`;
 }
 
 function countBlockSize() {
-	blockSize = body.offsetWidth / __k;
+	const laneCount = config.get("laneCount");
+
+	blockSize = body.offsetWidth / laneCount;
 	body.style.height = `${window.innerHeight}px`;
 	GameLayerBG.style.height = `${window.innerHeight}px`;
 	touchArea[0] = window.innerHeight - blockSize * 0;
@@ -248,7 +253,7 @@ let _gameBBList: { cell: number; id: string }[] = [],
 	_gameStart = false,
 	_gameTime: any,
 	_gameTimeNum: number,
-	_gameScore: number,
+	_gameScore = 0,
 	_date1: Date,
 	deviation_time: number;
 
@@ -279,7 +284,7 @@ function gameRestart() {
 	_gameScore = 0;
 	_gameOver = false;
 	_gameStart = false;
-	_gameTimeNum = __Time;
+	_gameTimeNum = config.get("timeLimit");
 	GameTimeLayer.innerHTML = creatTimeText(_gameTimeNum);
 	countBlockSize();
 	refreshGameLayer(GameLayer[0]!);
@@ -287,9 +292,15 @@ function gameRestart() {
 }
 
 function gameStart() {
+	const config = ConfigManager.getInstance();
 	_date1 = new Date();
 	_gameStart = true;
-	_gameTimeNum = __Time;
+	_gameTimeNum = config.get("timeLimit");
+
+	if (_gameTime) {
+		clearInterval(_gameTime);
+	}
+
 	_gameTime = setInterval(gameTime, 1000);
 }
 
@@ -311,7 +322,7 @@ function gameTime() {
 		GameTimeLayer.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;时间到！";
 		gameOver();
 		GameLayerBG.className += " flash";
-		if (!_close) {
+		if (!config.get("isSoundMuted")) {
 			createjs.Sound.play("end");
 		}
 	} else {
@@ -327,41 +338,43 @@ const _ttreg = / t{1,2}(\d+)/,
 	_clearttClsReg = / t{1,2}\d+| bad/;
 
 function randomPos() {
-	//生成按键产生的随机位置
+	const laneCount = config.get("laneCount");
+
+	// 生成按键产生的随机位置
 	let x = 0;
 	if (key[last] === "!") {
-		x = Math.floor(Math.random() * 1000) % __k;
+		x = Math.floor(Math.random() * 1000) % laneCount;
 		let pos = last - 1;
 		if (pos === -1) {
 			pos = len - 1;
 		}
 	} else if (key[last] === "@") {
-		x = Math.floor(Math.random() * 1000) % __k;
+		x = Math.floor(Math.random() * 1000) % laneCount;
 		if (x === lkey) {
 			x++;
-			if (x === __k) {
+			if (x === laneCount) {
 				x = 0;
 			}
 		}
 	} else if (key[last] === "#") {
 		x = lkey;
 	} else if (key[last] === "&") {
-		x = __k - 1 - lkey;
+		x = laneCount - 1 - lkey;
 	} else if (key[last] === "+") {
 		const num = parseInt(key[last + 1]!, 10);
 		last++;
-		x = (lkey + num) % __k;
+		x = (lkey + num) % laneCount;
 	} else if (key[last] === "-") {
 		const num = parseInt(key[last + 1]!, 10);
 		last++;
-		x = (lkey - num + __k) % __k;
+		x = (lkey - num + laneCount) % laneCount;
 	} else if (key[last] === "%") {
 		const num1 = parseInt(key[last + 1]!, 10) - 1;
 		let num2 = parseInt(key[last + 2]!, 10) - 1;
 		if (num2 < num1) {
-			num2 += __k;
+			num2 += laneCount;
 		}
-		x = randomFrom(num1, num2) % __k;
+		x = randomFrom(num1, num2) % laneCount;
 		last += 2;
 	} else if (key[last] === "*") {
 		const l = parseInt(key[last + 1]!, 10);
@@ -387,27 +400,30 @@ function refreshGameLayer(
 	loop?: number | boolean,
 	offset?: number,
 ) {
-	let i = randomPos() + (loop ? 0 : __k);
+	const laneCount = config.get("laneCount");
+	const skinUrl = config.get("skinUrl");
+	let i = randomPos() + (loop ? 0 : laneCount);
+
 	for (let j = 0; j < box.children.length; j++) {
 		const r = box.children[j] as GameBlockElement,
 			rstyle = r.style;
-		rstyle.left = `${(j % __k) * blockSize}px`;
-		rstyle.bottom = `${Math.floor(j / __k) * blockSize}px`;
+		rstyle.left = `${(j % laneCount) * blockSize}px`;
+		rstyle.bottom = `${Math.floor(j / laneCount) * blockSize}px`;
 		rstyle.width = `${blockSize}px`;
 		rstyle.height = `${blockSize}px`;
 		rstyle.backgroundImage = "none";
 		r.className = r.className.replace(_clearttClsReg, "");
 		if (i === j) {
 			_gameBBList.push({
-				cell: i % __k,
+				cell: i % laneCount,
 				id: r.id,
 			});
-			rstyle.backgroundImage = `url(${url})`;
+			rstyle.backgroundImage = `url(${skinUrl})`;
 			rstyle.backgroundSize = "cover";
-			r.className += ` t${(Math.floor(Math.random() * 1000) % (__k + 1)) + 1}`;
+			r.className += ` t${(Math.floor(Math.random() * 1000) % (laneCount + 1)) + 1}`;
 			r.notEmpty = true;
-			if (j < box.children.length - __k) {
-				i = randomPos() + (Math.floor(j / __k) + 1) * __k;
+			if (j < box.children.length - laneCount) {
+				i = randomPos() + (Math.floor(j / laneCount) + 1) * laneCount;
 			}
 		} else {
 			r.notEmpty = false;
@@ -418,7 +434,7 @@ function refreshGameLayer(
 		box.style.display = "none";
 		box.y =
 			-blockSize *
-			(Math.floor(box.children.length / __k) + (offset || 0)) *
+			(Math.floor(box.children.length / laneCount) + (offset || 0)) *
 			Number(loop);
 		setTimeout(() => {
 			box.style[transform as any] = `translate3D(0,${box.y}px,0)`;
@@ -434,10 +450,12 @@ function refreshGameLayer(
 }
 
 function gameLayerMoveNextRow() {
+	const laneCount = config.get("laneCount");
+
 	for (let i = 0; i < GameLayer.length; i++) {
 		const g = GameLayer[i]!;
 		g.y += blockSize;
-		if (g.y > blockSize * Math.floor(g.children.length / __k)) {
+		if (g.y > blockSize * Math.floor(g.children.length / laneCount)) {
 			refreshGameLayer(g, 1, -1);
 		} else {
 			g.style[transform as any] = `translate3D(0,${g.y}px,0)`;
@@ -477,7 +495,9 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 
 	const clickedLane = Math.floor(x / blockSize);
 
-	const isYValid = _fsj || (y <= touchArea[0]! && y >= touchArea[1]!);
+	const isYValid =
+		config.get("enableVerticalJudgement") ||
+		(y <= touchArea[0]! && y >= touchArea[1]!);
 
 	if (!isYValid) {
 		return false;
@@ -490,7 +510,7 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 			gameStart();
 		}
 
-		if (!_close) {
+		if (!config.get("isSoundMuted")) {
 			createjs.Sound.play("tap");
 		}
 
@@ -506,7 +526,7 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 		gameLayerMoveNextRow();
 	} else {
 		if (_gameStart) {
-			if (!_close) {
+			if (!config.get("isSoundMuted")) {
 				createjs.Sound.play("err");
 			}
 
@@ -523,19 +543,25 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 }
 
 function createGameLayer() {
+	const laneCount = config.get("laneCount");
+
 	let html = '<div id="GameLayerBG">';
 	for (let i = 1; i <= 2; i++) {
 		const id = `GameLayer${i}`;
 		html += `<div id="${id}" class="GameLayer">`;
-		for (let j = 0; j < (__k * 2 >= 10 ? __k * 2 : __k * 3); j++) {
-			for (let k = 0; k < __k; k++) {
+		for (
+			let j = 0;
+			j < (laneCount * 2 >= 10 ? laneCount * 2 : laneCount * 3);
+			j++
+		) {
+			for (let k = 0; k < laneCount; k++) {
 				html +=
 					'<div id="' +
 					id +
 					"-" +
-					(k + j * __k) +
+					(k + j * laneCount) +
 					'" num="' +
-					(k + j * __k) +
+					(k + j * laneCount) +
 					'" class="block' +
 					(k ? " bl" : "") +
 					'"></div>';
@@ -560,15 +586,24 @@ function showWelcomeLayer() {
 
 function showGameScoreLayer() {
 	const l = document.getElementById("GameScoreLayer")!;
+	const endTime = date2 ? date2.getTime() : Date.now();
+	const startTime = _date1 ? _date1.getTime() : endTime;
+	deviation_time = endTime - startTime;
+
 	const c = (
 		document.getElementById(
 			_gameBBList[_gameBBListIndex - 1]!.id,
 		) as HTMLElement
 	).className.match(_ttreg)![1];
+
 	l.className = l.className.replace(/bgc\d/, `bgc${c}`);
-	document.getElementById("GameScoreLayer-text")!.innerHTML = hide
+
+	const hideText = ConfigManager.getInstance().get("hideEndText");
+
+	document.getElementById("GameScoreLayer-text")!.innerHTML = hideText
 		? ""
 		: `<span style='color:red;'>${shareText(_gameScore)}</span>`;
+
 	let score_text = "您坚持了 ";
 	score_text +=
 		"<span style='color:red;'>" +
@@ -586,15 +621,15 @@ function showGameScoreLayer() {
 		((_gameScore * 15000) / deviation_time).toFixed(2) +
 		"</span> BPM 下的十六分音符哦！";
 	document.getElementById("GameScoreLayer-score")!.innerHTML = score_text;
-	let bast = loadData<number>("bast-score");
+	let best = loadData<number>("best-score");
 
-	if (!bast || _gameScore > bast) {
-		bast = _gameScore;
-		saveData("bast-score", bast);
+	if (!best || _gameScore > best) {
+		best = _gameScore;
+		saveData("best-score", best);
 	}
 
 	document.getElementById("GameScoreLayer-bast")!.innerHTML =
-		`历史最佳得分 <span style='color:red;'>${bast}</span>`;
+		`历史最佳得分 <span style='color:red;'>${best}</span>`;
 	const now =
 		"您的自定义键型为：" +
 		"<span style='color:red;'>" +
@@ -615,11 +650,13 @@ function replayBtn() {
 }
 
 function shareText(score: number) {
-	deviation_time = date2.getTime() - _date1.getTime();
-	if (score <= 2.5 * __Time) return "加油！我相信您可以的！";
-	if (score <= 5 * __Time) return "^_^ 加把劲，底力大王就是您！";
-	if (score <= 7.5 * __Time) return "您！";
-	if (score <= 10 * __Time) return "太 您 了！";
+	const config = ConfigManager.getInstance();
+	const timeLimit = config.get("timeLimit");
+
+	if (score <= 2.5 * timeLimit) return "加油！我相信您可以的！";
+	if (score <= 5 * timeLimit) return "^_^ 加把劲，底力大王就是您！";
+	if (score <= 7.5 * timeLimit) return "您！";
+	if (score <= 10 * timeLimit) return "太 您 了！";
 	return "您是外星人嘛？";
 }
 
@@ -674,22 +711,30 @@ function lstpage(i: number) {
 }
 
 function show_setting() {
-	const str = [];
-	for (let i = 1; i <= __k; ++i) {
-		str.push("a");
-	}
-	for (const ke in map) {
-		str[map[ke]! - 1] = ke.charAt(0);
-	}
-	(document.getElementById("k") as HTMLInputElement).value = __k.toString();
+	const config = ConfigManager.getInstance();
+	const laneCount = config.get("laneCount");
+	const keyMappingStr = config.get("keyMapping").slice(0, laneCount).join("");
+
+	(document.getElementById("k") as HTMLInputElement).value =
+		laneCount.toString();
 	(document.getElementById("keyboard") as HTMLInputElement).value =
-		str.join("");
-	(document.getElementById("timeinput") as HTMLInputElement).value =
-		__Time.toString();
-	(document.getElementById("note") as HTMLInputElement).value = key.join("");
-	(document.getElementById("hide") as HTMLInputElement).checked = hide;
-	(document.getElementById("close") as HTMLInputElement).checked = _close;
-	(document.getElementById("fsj") as HTMLInputElement).checked = _fsj;
+		keyMappingStr;
+
+	(document.getElementById("timeinput") as HTMLInputElement).value = config
+		.get("timeLimit")
+		.toString();
+
+	(document.getElementById("note") as HTMLInputElement).value =
+		config.get("dropPattern");
+
+	(document.getElementById("hide") as HTMLInputElement).checked =
+		config.get("hideEndText");
+	(document.getElementById("close") as HTMLInputElement).checked =
+		config.get("isSoundMuted");
+	(document.getElementById("fsj") as HTMLInputElement).checked = config.get(
+		"enableVerticalJudgement",
+	);
+
 	document.getElementById("btn_group")!.style.display = "none";
 	document.getElementById("btn_group2")!.style.display = "none";
 	document.getElementById("tt")!.style.display = "none";
@@ -698,29 +743,48 @@ function show_setting() {
 }
 
 function save_cookie() {
-	const str = (document.getElementById("keyboard") as HTMLInputElement).value;
-	const Time = (document.getElementById("timeinput") as HTMLInputElement).value;
-	hide = (document.getElementById("hide") as HTMLInputElement).checked;
-	_close = (document.getElementById("close") as HTMLInputElement).checked;
-	_fsj = (document.getElementById("fsj") as HTMLInputElement).checked;
-
-	const tsmp = parseInt(
+	const keyMappingStr = (
+		document.getElementById("keyboard") as HTMLInputElement
+	).value;
+	const timeStr = (document.getElementById("timeinput") as HTMLInputElement)
+		.value;
+	const hideEndText = (document.getElementById("hide") as HTMLInputElement)
+		.checked;
+	const isSoundMuted = (document.getElementById("close") as HTMLInputElement)
+		.checked;
+	const enableVerticalJudgement = (
+		document.getElementById("fsj") as HTMLInputElement
+	).checked;
+	const laneCountVal = parseInt(
 		(document.getElementById("k") as HTMLInputElement).value,
 		10,
 	);
-	if (tsmp !== __k) {
-		__k = tsmp;
+
+	const currentLaneCount = config.get("laneCount");
+
+	config.update({
+		laneCount: laneCountVal,
+		timeLimit: parseInt(timeStr, 10),
+		keyMapping: keyMappingStr.split(""),
+		hideEndText: hideEndText,
+		isSoundMuted: isSoundMuted,
+		enableVerticalJudgement: enableVerticalJudgement,
+	});
+
+	if (laneCountVal !== currentLaneCount) {
 		const el = document.getElementById("GameLayerBG")!;
 		const fa = el.parentNode!;
 		fa.removeChild(el);
 		fa.removeChild(GameTimeLayer);
 		fa.appendChild(parseElement(createGameLayer()));
 		fa.appendChild(parseElement('<div id = "GameTimeLayer"></div>'));
+
 		GameTimeLayer = document.getElementById("GameTimeLayer") as HTMLElement;
 		GameLayer = [];
 		GameLayer.push(document.getElementById("GameLayer1") as GameLayerElement);
 		GameLayer.push(document.getElementById("GameLayer2") as GameLayerElement);
 		GameLayerBG = document.getElementById("GameLayerBG") as HTMLElement;
+
 		if (GameLayerBG.ontouchstart === null) {
 			GameLayerBG.ontouchstart = gameTapEvent;
 		} else {
@@ -728,23 +792,10 @@ function save_cookie() {
 		}
 	}
 
-	map = {};
-	for (let i = 0; i < __k; ++i) {
-		map[str.charAt(i).toLowerCase()] = i + 1;
-	}
+	GameTimeLayer.innerHTML = creatTimeText(config.get("timeLimit"));
 
-	__Time = parseInt(Time, 10);
-	GameTimeLayer.innerHTML = creatTimeText(__Time);
-
+	generateKeyMap();
 	updateGamePattern();
-
-	saveData("k", __k);
-	saveData("note", key.join(""));
-	saveData("time", Time);
-	saveData("key", str);
-	saveData("close", _close ? "1" : "0");
-	saveData("hide", hide ? "1" : "0");
-	saveData("fsj", _fsj ? "1" : "0");
 
 	gameRestart();
 }
@@ -780,8 +831,13 @@ function autoset(pattern: string) {
 }
 
 function showImg(input: HTMLInputElement) {
-	var file = input.files![0];
-	url = window.URL.createObjectURL(file!);
+	const file = input.files![0];
+	if (file) {
+		const newUrl = window.URL.createObjectURL(file);
+		config.update({
+			skinUrl: newUrl,
+		});
+	}
 }
 
 function stair() {
