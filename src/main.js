@@ -19,12 +19,12 @@ function initStyle() {
 	const style = document.createElement("style");
 	let cssText = `html,body {font-size:${fontunit}px;}`;
 
-	if (isDesktop) {
-		cssText +=
-			"#welcome,#GameTimeLayer,#GameLayerBG,#GameScoreLayer.SHADE{position: absolute;}";
-	} else {
-		cssText +=
-			"#welcome,#GameTimeLayer,#GameLayerBG,#GameScoreLayer.SHADE{position:fixed;}";
+	cssText += "#GameTimeLayer, #GameLayerBG { position: absolute; }";
+
+	cssText +=
+		"#welcome, #GameScoreLayer { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }";
+
+	if (!isDesktop) {
 		cssText +=
 			"@media screen and (orientation:landscape) {#landscape {display: flex;}}";
 	}
@@ -32,6 +32,7 @@ function initStyle() {
 	style.innerHTML = cssText;
 	document.head.appendChild(style);
 }
+
 let map = { d: 1, f: 2, j: 3, k: 4 };
 let key = ["!"];
 const chs = ["@", "!", "#", "&", "+", "-", "%", "*"];
@@ -54,7 +55,6 @@ function isplaying() {
 function gl() {
 	const tmp = [];
 	len = key.length;
-	var i = 0;
 	for (let i = 0; i < len; ++i) {
 		if (chs.includes(key[i]) || (key[i] >= "1" && key[i] <= __k.toString())) {
 			tmp.push(key[i]);
@@ -86,7 +86,7 @@ function init() {
 	}
 	showWelcomeLayer();
 	body = document.getElementById("gameBody") || document.body;
-	body.style.height = window.innerHeight + "px";
+	body.style.height = `${window.innerHeight}px`;
 	transform =
 		typeof body.style.webkitTransform != "undefined"
 			? "webkitTransform"
@@ -128,16 +128,6 @@ function init() {
 	});
 }
 
-function winOpen() {
-	window.open(
-		location.href + "?r=" + Math.random(),
-		"nWin",
-		"height=500,width=320,toolbar=no,menubar=no,scrollbars=no",
-	);
-	const opened = window.open("about:blank", "_self");
-	opened.opener = null;
-	opened.close();
-}
 let refreshSizeTime;
 
 function refreshSize() {
@@ -152,10 +142,10 @@ function _refreshSize() {
 		for (let j = 0; j < box.children.length; j++) {
 			const r = box.children[j],
 				rstyle = r.style;
-			rstyle.left = (j % __k) * blockSize + "px";
-			rstyle.bottom = Math.floor(j / __k) * blockSize + "px";
-			rstyle.width = blockSize + "px";
-			rstyle.height = blockSize + "px";
+			rstyle.left = `${(j % __k) * blockSize}px`;
+			rstyle.bottom = `${Math.floor(j / __k) * blockSize}px`;
+			rstyle.width = `${blockSize}px`;
+			rstyle.height = `${blockSize}px`;
 		}
 	}
 	let f, a;
@@ -168,15 +158,15 @@ function _refreshSize() {
 	}
 	const y = (_gameBBListIndex % 10) * blockSize;
 	f.y = y;
-	f.style[transform] = "translate3D(0," + f.y + "px,0)";
+	f.style[transform] = `translate3D(0,${f.y}px,0)`;
 	a.y = -blockSize * Math.floor(f.children.length / __k) + y;
-	a.style[transform] = "translate3D(0," + a.y + "px,0)";
+	a.style[transform] = `translate3D(0,${a.y}px,0)`;
 }
 
 function countBlockSize() {
 	blockSize = body.offsetWidth / __k;
-	body.style.height = window.innerHeight + "px";
-	GameLayerBG.style.height = window.innerHeight + "px";
+	body.style.height = `${window.innerHeight}px`;
+	GameLayerBG.style.height = `${window.innerHeight}px`;
 	touchArea[0] = window.innerHeight - blockSize * 0;
 	touchArea[1] = window.innerHeight - blockSize * 3;
 }
@@ -258,7 +248,7 @@ function gameTime() {
 }
 
 function creatTimeText(n) {
-	return "&nbsp;剩余时间:" + n;
+	return `&nbsp;剩余时间:${n}`;
 }
 
 const _ttreg = / t{1,2}(\d+)/,
@@ -267,54 +257,54 @@ const _ttreg = / t{1,2}(\d+)/,
 function randomPos() {
 	//生成按键产生的随机位置
 	let x = 0;
-	if (key[last] == "!") {
+	if (key[last] === "!") {
 		x = Math.floor(Math.random() * 1000) % __k;
 		let pos = last - 1;
-		if (pos == -1) {
+		if (pos === -1) {
 			pos = len - 1;
 		}
-	} else if (key[last] == "@") {
+	} else if (key[last] === "@") {
 		x = Math.floor(Math.random() * 1000) % __k;
-		if (x == lkey) {
+		if (x === lkey) {
 			x++;
-			if (x == __k) {
+			if (x === __k) {
 				x = 0;
 			}
 		}
-	} else if (key[last] == "#") {
+	} else if (key[last] === "#") {
 		x = lkey;
-	} else if (key[last] == "&") {
+	} else if (key[last] === "&") {
 		x = __k - 1 - lkey;
-	} else if (key[last] == "+") {
-		const num = parseInt(key[last + 1]);
+	} else if (key[last] === "+") {
+		const num = parseInt(key[last + 1], 10);
 		last++;
 		x = (lkey + num) % __k;
-	} else if (key[last] == "-") {
-		const num = parseInt(key[last + 1]);
+	} else if (key[last] === "-") {
+		const num = parseInt(key[last + 1], 10);
 		last++;
 		x = (lkey - num + __k) % __k;
-	} else if (key[last] == "%") {
-		const num1 = parseInt(key[last + 1]) - 1;
-		let num2 = parseInt(key[last + 2]) - 1;
+	} else if (key[last] === "%") {
+		const num1 = parseInt(key[last + 1], 10) - 1;
+		let num2 = parseInt(key[last + 2], 10) - 1;
 		if (num2 < num1) {
 			num2 += __k;
 		}
 		x = randomFrom(num1, num2) % __k;
 		last += 2;
-	} else if (key[last] == "*") {
-		const l = parseInt(key[last + 1]);
+	} else if (key[last] === "*") {
+		const l = parseInt(key[last + 1], 10);
 		const nums = [];
 		for (let i = 1; i <= l; ++i) {
-			nums.push(parseInt(key[last + i + 1]) - 1);
+			nums.push(parseInt(key[last + i + 1], 10) - 1);
 		}
 		last += l + 1;
 		x = nums[randomFrom(0, l - 1)];
 	} else {
-		x = parseInt(key[last]) - 1;
+		x = parseInt(key[last], 10) - 1;
 	}
 	lkey = x;
 	last++;
-	if (last == len) {
+	if (last === len) {
 		last = 0;
 	}
 	return x;
@@ -325,10 +315,10 @@ function refreshGameLayer(box, loop, offset) {
 	for (let j = 0; j < box.children.length; j++) {
 		const r = box.children[j],
 			rstyle = r.style;
-		rstyle.left = (j % __k) * blockSize + "px";
-		rstyle.bottom = Math.floor(j / __k) * blockSize + "px";
-		rstyle.width = blockSize + "px";
-		rstyle.height = blockSize + "px";
+		rstyle.left = `${(j % __k) * blockSize}px`;
+		rstyle.bottom = `${Math.floor(j / __k) * blockSize}px`;
+		rstyle.width = `${blockSize}px`;
+		rstyle.height = `${blockSize}px`;
 		rstyle.backgroundImage = "none";
 		r.className = r.className.replace(_clearttClsReg, "");
 		if (i == j) {
@@ -336,10 +326,9 @@ function refreshGameLayer(box, loop, offset) {
 				cell: i % __k,
 				id: r.id,
 			});
-			rstyle.backgroundImage = "url(" + url + ")";
+			rstyle.backgroundImage = `url(${url})`;
 			rstyle.backgroundSize = "cover";
-			r.className +=
-				" t" + ((Math.floor(Math.random() * 1000) % (__k + 1)) + 1);
+			r.className += ` t${(Math.floor(Math.random() * 1000) % (__k + 1)) + 1}`;
 			r.notEmpty = true;
 			if (j < box.children.length - __k) {
 				i = randomPos() + (Math.floor(j / __k) + 1) * __k;
@@ -356,14 +345,14 @@ function refreshGameLayer(box, loop, offset) {
 			(Math.floor(box.children.length / __k) + (offset || 0)) *
 			loop;
 		setTimeout(() => {
-			box.style[transform] = "translate3D(0," + box.y + "px,0)";
+			box.style[transform] = `translate3D(0,${box.y}px,0)`;
 			setTimeout(() => {
 				box.style.display = "block";
 			}, 0);
 		}, 0);
 	} else {
 		box.y = 0;
-		box.style[transform] = "translate3D(0," + box.y + "px,0)";
+		box.style[transform] = `translate3D(0,${box.y}px,0)`;
 	}
 	box.style[transitionDuration] = "180ms";
 }
@@ -375,57 +364,93 @@ function gameLayerMoveNextRow() {
 		if (g.y > blockSize * Math.floor(g.children.length / __k)) {
 			refreshGameLayer(g, 1, -1);
 		} else {
-			g.style[transform] = "translate3D(0," + g.y + "px,0)";
+			g.style[transform] = `translate3D(0,${g.y}px,0)`;
 		}
 	}
+}
+
+function getEventPosition(e, container) {
+	let clientX, clientY;
+
+	if (e.touches && e.touches.length > 0) {
+		clientX = e.touches[0].clientX;
+		clientY = e.touches[0].clientY;
+	} else {
+		clientX = e.clientX;
+		clientY = e.clientY;
+	}
+
+	const rect = container.getBoundingClientRect();
+	return {
+		x: clientX - rect.left,
+		y: clientY - rect.top,
+	};
 }
 
 function gameTapEvent(e) {
 	if (_gameOver) {
 		return false;
 	}
-	let tar = e.target;
-	const y = e.clientY || e.targetTouches[0].clientY,
-		x = (e.clientX || e.targetTouches[0].clientX) - body.offsetLeft,
-		p = _gameBBList[_gameBBListIndex];
 
-	if (!_fsj && (y > touchArea[0] || y < touchArea[1])) {
+	const container = document.getElementById("gameBody") || document.body;
+	const { x, y } = getEventPosition(e, container);
+
+	const currentTarget = _gameBBList[_gameBBListIndex];
+
+	if (!currentTarget) return false;
+
+	const clickedLane = Math.floor(x / blockSize);
+
+	const isYValid = _fsj || (y <= touchArea[0] && y >= touchArea[1]);
+
+	if (!isYValid) {
 		return false;
 	}
-	if (
-		((p.id == tar.id || (_fsj && p.id % __k == tar.id % __k)) &&
-			tar.notEmpty) ||
-		(p.cell == 0 && x < blockSize) ||
-		(x > p.cell * blockSize && x < (p.cell + 1) * blockSize) ||
-		(p.cell == __k - 1 && x > (__k - 1) * blockSize)
-	) {
+
+	const isLaneCorrect = clickedLane === currentTarget.cell;
+
+	if (isLaneCorrect) {
 		if (!_gameStart) {
 			gameStart();
 		}
+
 		if (!_close) {
 			createjs.Sound.play("tap");
 		}
-		tar = document.getElementById(p.id);
-		tar.className = tar.className.replace(_ttreg, " tt$1");
-		tar.style.backgroundImage = "none";
+
+		const targetNode = document.getElementById(currentTarget.id);
+		if (targetNode) {
+			targetNode.className = targetNode.className.replace(/ t\d+/, " tt1");
+			targetNode.style.backgroundImage = "none";
+		}
+
 		_gameBBListIndex++;
 		_gameScore++;
+
 		gameLayerMoveNextRow();
-	} else if (_gameStart && !tar.notEmpty) {
-		if (!_close) {
-			createjs.Sound.play("err");
+	} else {
+		if (_gameStart) {
+			if (!_close) {
+				createjs.Sound.play("err");
+			}
+
+			if (e.target?.classList.contains("block")) {
+				e.target.classList.add("bad");
+			}
+
+			gameOver();
 		}
-		gameOver();
-		tar.className += " bad";
 	}
+
+	if (e.preventDefault) e.preventDefault();
 	return false;
 }
 
 function createGameLayer() {
 	let html = '<div id="GameLayerBG">';
 	for (let i = 1; i <= 2; i++) {
-		const id = "GameLayer" + i;
-		html += '<div id="' + id + '" class="GameLayer">';
+		const id = `GameLayer${i}`;
+		html += `<div id="${id}" class="GameLayer">`;
 		for (let j = 0; j < (__k * 2 >= 10 ? __k * 2 : __k * 3); j++) {
 			for (let k = 0; k < __k; k++) {
 				html +=
@@ -462,17 +487,17 @@ function showGameScoreLayer() {
 	const c = document
 		.getElementById(_gameBBList[_gameBBListIndex - 1].id)
 		.className.match(_ttreg)[1];
-	l.className = l.className.replace(/bgc\d/, "bgc" + c);
+	l.className = l.className.replace(/bgc\d/, `bgc${c}`);
 	document.getElementById("GameScoreLayer-text").innerHTML = hide
 		? ""
-		: "<span style='color:red;'>" + shareText(_gameScore) + "</span>";
+		: `<span style='color:red;'>${shareText(_gameScore)}</span>`;
 	let score_text = "您坚持了 ";
 	score_text +=
 		"<span style='color:red;'>" +
 		(deviation_time / 1000).toFixed(2) +
 		"</span>" +
 		" 秒哦！<br>您的得分为 ";
-	score_text += "<span style='color:red;'>" + _gameScore + "</span>";
+	score_text += `<span style='color:red;'>${_gameScore}</span>`;
 	score_text += "<br>您平均每秒点击了 ";
 	score_text +=
 		"<span style='color:red;'>" +
@@ -483,7 +508,7 @@ function showGameScoreLayer() {
 		((_gameScore * 15000) / deviation_time).toFixed(2) +
 		"</span> BPM 下的十六分音符哦！";
 	document.getElementById("GameScoreLayer-score").innerHTML = score_text;
-	let bast = cookie("bast-score");
+	let bast = loadData("bast-score");
 
 	if (!bast || _gameScore > bast) {
 		bast = _gameScore;
@@ -491,19 +516,19 @@ function showGameScoreLayer() {
 	}
 
 	document.getElementById("GameScoreLayer-bast").innerHTML =
-		"历史最佳得分 " + "<span style='color:red;'>" + bast + "</span>";
+		`历史最佳得分 <span style='color:red;'>${bast}</span>`;
 	const now =
 		"您的自定义键型为：" +
 		"<span style='color:red;'>" +
 		key.join("") +
 		"</span>";
 	document.getElementById("now").innerHTML = now;
-	l.style.display = "block";
+	l.classList.add("visible");
 }
 
 function hideGameScoreLayer() {
 	const l = document.getElementById("GameScoreLayer");
-	l.style.display = "none";
+	l.classList.remove("visible");
 }
 
 function replayBtn() {
@@ -529,8 +554,8 @@ function shareText(score) {
 function initSetting() {
 	const kSetting = loadData("k");
 	if (kSetting) {
-		const tsmp = parseInt(kSetting);
-		if (tsmp != __k) {
+		const tsmp = parseInt(kSetting, 10);
+		if (tsmp !== __k) {
 			__k = tsmp;
 			var el = document.getElementById("GameLayerBG");
 			const fa = el.parentNode;
@@ -595,18 +620,18 @@ function show_btn(i) {
 	document.getElementById("ttt").style.display = "block";
 	document.getElementById("btn_group").style.display = "block";
 	document.getElementById("btn_group2").style.display = "block";
-	document.getElementById("setting" + i.toString()).style.display = "none";
+	document.getElementById(`setting${i.toString()}`).style.display = "none";
 }
 
 function nxtpage(i) {
-	document.getElementById("setting" + i.toString()).style.display = "none";
-	document.getElementById("setting" + (i + 1).toString()).style.display =
+	document.getElementById(`setting${i.toString()}`).style.display = "none";
+	document.getElementById(`setting${(i + 1).toString()}`).style.display =
 		"block";
 }
 
 function lstpage(i) {
-	document.getElementById("setting" + i.toString()).style.display = "none";
-	document.getElementById("setting" + (i - 1).toString()).style.display =
+	document.getElementById(`setting${i.toString()}`).style.display = "none";
+	document.getElementById(`setting${(i - 1).toString()}`).style.display =
 		"block";
 }
 
@@ -640,7 +665,7 @@ function save_cookie() {
 	_close = document.getElementById("close").checked;
 	_fsj = document.getElementById("fsj").checked;
 
-	const tsmp = parseInt(document.getElementById("k").value);
+	const tsmp = parseInt(document.getElementById("k").value, 10);
 	if (tsmp != __k) {
 		__k = tsmp;
 		var el = document.getElementById("GameLayerBG");
@@ -666,7 +691,7 @@ function save_cookie() {
 		map[str.charAt(i).toLowerCase()] = i + 1;
 	}
 
-	__Time = parseInt(Time);
+	__Time = parseInt(Time, 10);
 	GameTimeLayer.innerHTML = creatTimeText(__Time);
 
 	key = note.split("");
@@ -683,22 +708,22 @@ function save_cookie() {
 	gameRestart();
 }
 
-function click(index) {
-	const p = _gameBBList[_gameBBListIndex];
-	const base =
-		parseInt(document.getElementById(p.id).getAttribute("num")) - p.cell;
-	const num = base + index - 1;
-	const id = p.id.substring(0, 11) + num;
+function click(laneIndex) {
+	const lane = laneIndex - 1;
+	const centerX = lane * blockSize + blockSize / 2;
+	const centerY = (touchArea[0] + touchArea[1]) / 2;
 
-	const fakeEvent = {
+	const mockEvent = {
 		clientX:
-			((index - 1) * blockSize + index * blockSize) / 2 + body.offsetLeft,
-		// Make sure that it is in the area
-		clientY: (touchArea[0] + touchArea[1]) / 2,
-		target: document.getElementById(id),
+			centerX +
+			document.getElementById("gameBody").getBoundingClientRect().left,
+		clientY:
+			centerY + document.getElementById("gameBody").getBoundingClientRect().top,
+		preventDefault: () => {},
+		target: null,
 	};
 
-	gameTapEvent(fakeEvent);
+	gameTapEvent(mockEvent);
 }
 
 function autoset(asss) {

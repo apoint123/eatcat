@@ -22,61 +22,54 @@
 	</head>
 
 	<body oncontextmenu="self.event.returnValue=false">
-		<div id="gameBody">
-			<div id="GameScoreLayer" class="BBOX SHADE bgc1" style="display:none;">
-				<div
-					style="padding:5%;margin-top: 200px;background-color: rgba(125, 181, 216, 0.8);"
+		<div id="gameBody"></div>
+		<div id="GameScoreLayer" class="BBOX SHADE bgc1">
+			<div
+				style="padding:5%; background-color: rgba(125, 181, 216, 0.8); max-height: 90vh; overflow-y: auto;"
+			>
+				<div id="GameScoreLayer-text"></div>
+				<div id="GameScoreLayer-score" style="margin:10px 0;">得分</div>
+				<div id="GameScoreLayer-bast">最佳</div>
+				<div id="now">键型</div>
+				<div id="nosw">电脑端玩家按下R键可一键重开哦~</div>
+				<button
+					type="button"
+					class="btn btn-secondary btn-lg"
+					onclick="replayBtn()"
 				>
-					<div id="GameScoreLayer-text" style="font-size:0.6em;"></div>
-					<div
-						id="GameScoreLayer-score"
-						style="font-size:0.6em; margin:10px 0;"
-					>
-						得分
-					</div>
-					<div id="GameScoreLayer-bast" style="font-size:0.6em;">最佳</div>
-					<div id="now" style="font-size:0.6em;">键型</div>
-					<div id="nosw" style="font-size:0.6em;">
-						电脑端玩家按下R键可一键重开哦~
-					</div>
-					<button
-						type="button"
-						class="btn btn-secondary btn-lg"
-						onclick="replayBtn()"
-					>
-						重来
-					</button>
-					<button
-						type="button"
-						class="btn btn-secondary btn-lg"
-						onclick="hideGameScoreLayer();showWelcomeLayer();gameRestart()"
-					>
-						返回主页
-					</button>
-					<button
-						type="button"
-						class="btn btn-secondary btn-lg"
-						onclick="window.location.href='https://github.com/UlyssesZha/eatcat'"
-					>
-						源代码(改版后)
-					</button>
-					<button
-						type="button"
-						class="btn btn-secondary btn-lg"
-						onclick="window.location.href='https://github.com/arcxingye/EatKano'"
-					>
-						源代码(原版)
-					</button>
-					<button
-						type="button"
-						class="btn btn-secondary btn-lg"
-						onclick="window.location.href='https://space.bilibili.com/470549205'"
-					>
-						作者的B站主页
-					</button>
-				</div>
+					重来
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary btn-lg"
+					onclick="hideGameScoreLayer();showWelcomeLayer();gameRestart()"
+				>
+					返回主页
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary btn-lg"
+					onclick="window.location.href='https://github.com/UlyssesZha/eatcat'"
+				>
+					源代码(改版后)
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary btn-lg"
+					onclick="window.location.href='https://github.com/arcxingye/EatKano'"
+				>
+					源代码(原版)
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary btn-lg"
+					onclick="window.location.href='https://space.bilibili.com/470549205'"
+				>
+					作者的B站主页
+				</button>
 			</div>
 		</div>
+
 		<div id="welcome" class="SHADE BOX-M">
 			<div class="welcome-bg FILL"></div>
 			<div
