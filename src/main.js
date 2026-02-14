@@ -42,13 +42,13 @@ let __Time = 20;
 let __k = 4;
 let _close = false;
 let _fsj = false;
-var url = "/image/ClickBefore.png";
+let url = "/image/ClickBefore.png";
 
 function isplaying() {
 	return (
-		document.getElementById("welcome").style.display == "none" &&
-		document.getElementById("GameScoreLayer").style.display == "none" &&
-		document.getElementById("setting1").style.display == "none"
+		document.getElementById("welcome").style.display === "none" &&
+		document.getElementById("GameScoreLayer").style.display === "none" &&
+		document.getElementById("setting1").style.display === "none"
 	);
 }
 
@@ -58,12 +58,12 @@ function gl() {
 	for (let i = 0; i < len; ++i) {
 		if (chs.includes(key[i]) || (key[i] >= "1" && key[i] <= __k.toString())) {
 			tmp.push(key[i]);
-		} else if (key[i] == "！") {
+		} else if (key[i] === "！") {
 			tmp.push("!");
 		}
 	}
 	key = tmp;
-	if (key.length == 0) {
+	if (key.length === 0) {
 		key = ["!"];
 	}
 	len = key.length;
@@ -88,9 +88,9 @@ function init() {
 	body = document.getElementById("gameBody") || document.body;
 	body.style.height = `${window.innerHeight}px`;
 	transform =
-		typeof body.style.webkitTransform != "undefined"
+		typeof body.style.webkitTransform !== "undefined"
 			? "webkitTransform"
-			: typeof body.style.msTransform != "undefined"
+			: typeof body.style.msTransform !== "undefined"
 				? "msTransform"
 				: "transform";
 	transitionDuration = transform.replace(/ransform/g, "ransitionDuration");
@@ -321,7 +321,7 @@ function refreshGameLayer(box, loop, offset) {
 		rstyle.height = `${blockSize}px`;
 		rstyle.backgroundImage = "none";
 		r.className = r.className.replace(_clearttClsReg, "");
-		if (i == j) {
+		if (i === j) {
 			_gameBBList.push({
 				cell: i % __k,
 				id: r.id,
@@ -557,7 +557,7 @@ function initSetting() {
 		const tsmp = parseInt(kSetting, 10);
 		if (tsmp !== __k) {
 			__k = tsmp;
-			var el = document.getElementById("GameLayerBG");
+			const el = document.getElementById("GameLayerBG");
 			const fa = el.parentNode;
 			fa.removeChild(el);
 			fa.removeChild(GameTimeLayer);
@@ -636,11 +636,11 @@ function lstpage(i) {
 }
 
 function show_setting() {
-	var str = [];
-	for (var i = 1; i <= __k; ++i) {
+	const str = [];
+	for (let i = 1; i <= __k; ++i) {
 		str.push("a");
 	}
-	for (var ke in map) {
+	for (const ke in map) {
 		str[map[ke] - 1] = ke.charAt(0);
 	}
 	document.getElementById("k").value = __k.toString();
@@ -666,9 +666,9 @@ function save_cookie() {
 	_fsj = document.getElementById("fsj").checked;
 
 	const tsmp = parseInt(document.getElementById("k").value, 10);
-	if (tsmp != __k) {
+	if (tsmp !== __k) {
 		__k = tsmp;
-		var el = document.getElementById("GameLayerBG");
+		const el = document.getElementById("GameLayerBG");
 		const fa = el.parentNode;
 		fa.removeChild(el);
 		fa.removeChild(GameTimeLayer);
@@ -739,10 +739,10 @@ function showImg(input) {
 
 function stair() {
 	key = [];
-	for (var i = 1; i < __k; ++i) {
+	for (let i = 1; i < __k; ++i) {
 		key.push(i.toString());
 	}
-	for (var i = __k; i > 1; --i) {
+	for (let i = __k; i > 1; --i) {
 		key.push(i.toString());
 	}
 	len = (__k - 1) * 2;
