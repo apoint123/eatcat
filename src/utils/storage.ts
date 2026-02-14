@@ -1,4 +1,4 @@
-import { isNull } from "./common.js";
+import { isNull } from "./common";
 
 export function saveData(key: string, value: unknown): void {
 	if (isNull(key)) return;
