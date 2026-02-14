@@ -7,7 +7,8 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
-		"tauri": "tauri"
+		"tauri": "tauri",
+		"build:android": "tauri android build --target aarch64 armv7"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.14",
