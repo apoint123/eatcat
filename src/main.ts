@@ -2,9 +2,10 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: 待重构 */
 import "./style.css";
 import { ConfigManager } from "./logic/ConfigManager";
+import { GameState, GameStatus } from "./logic/GameState";
 import { parsePattern } from "./logic/PatternParser";
 import { parseElement, randomFrom } from "./utils/common";
-import { clearAllData, loadData, saveData } from "./utils/storage";
+import { clearAllData } from "./utils/storage";
 
 interface GameBlockElement extends HTMLElement {
 	notEmpty?: boolean;
@@ -79,6 +80,11 @@ let body: HTMLElement,
 	touchArea: number[] = [],
 	GameTimeLayer: HTMLElement;
 let transform: string, transitionDuration: string;
+
+let _gameTime: ReturnType<typeof setInterval>;
+let refreshSizeTime: Timer;
+
+const gameState = new GameState();
 
 function handleBackToHome() {
 	hideGameScoreLayer();
@@ -201,8 +207,6 @@ function init() {
 	document.getElementById("btn-stair")?.addEventListener("click", stair);
 }
 
-let refreshSizeTime: Timer;
-
 function refreshSize() {
 	clearTimeout(refreshSizeTime);
 	refreshSizeTime = setTimeout(_refreshSize, 200);
@@ -231,7 +235,7 @@ function _refreshSize() {
 		f = GameLayer[1]!;
 		a = GameLayer[0]!;
 	}
-	const y = (_gameBBListIndex % 10) * blockSize;
+	const y = (gameState.currentBlockIndex % 10) * blockSize;
 	f.y = y;
 	f.style[transform as any] = `translate3D(0,${f.y}px,0)`;
 	a.y = -blockSize * Math.floor(f.children.length / laneCount) + y;
@@ -247,15 +251,6 @@ function countBlockSize() {
 	touchArea[0] = window.innerHeight - blockSize * 0;
 	touchArea[1] = window.innerHeight - blockSize * 3;
 }
-let _gameBBList: { cell: number; id: string }[] = [],
-	_gameBBListIndex = 0,
-	_gameOver = false,
-	_gameStart = false,
-	_gameTime: any,
-	_gameTimeNum: number,
-	_gameScore = 0,
-	_date1: Date,
-	deviation_time: number;
 
 function gameInit() {
 	createjs.Sound.registerSound({
@@ -273,42 +268,25 @@ function gameInit() {
 	gameRestart();
 }
 
-let last = 0,
-	lkey = 0;
-
 function gameRestart() {
-	last = 0;
-	lkey = 0;
-	_gameBBList = [];
-	_gameBBListIndex = 0;
-	_gameScore = 0;
-	_gameOver = false;
-	_gameStart = false;
-	_gameTimeNum = config.get("timeLimit");
-	GameTimeLayer.innerHTML = creatTimeText(_gameTimeNum);
+	gameState.init(config.get("timeLimit"));
+
+	GameTimeLayer.innerHTML = creatTimeText(gameState.remainingTime);
+
 	countBlockSize();
 	refreshGameLayer(GameLayer[0]!);
 	refreshGameLayer(GameLayer[1]!, 1);
 }
 
 function gameStart() {
-	const config = ConfigManager.getInstance();
-	_date1 = new Date();
-	_gameStart = true;
-	_gameTimeNum = config.get("timeLimit");
-
-	if (_gameTime) {
-		clearInterval(_gameTime);
-	}
+	gameState.startGame();
 
 	_gameTime = setInterval(gameTime, 1000);
 }
 
-let date2 = new Date();
-
 function gameOver() {
-	date2 = new Date();
-	_gameOver = true;
+	gameState.finishGame();
+
 	clearInterval(_gameTime);
 	setTimeout(() => {
 		GameLayerBG.className = "";
@@ -317,8 +295,9 @@ function gameOver() {
 }
 
 function gameTime() {
-	_gameTimeNum--;
-	if (_gameTimeNum <= 0) {
+	const isTimeUp = gameState.tickTimer();
+
+	if (isTimeUp) {
 		GameTimeLayer.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;时间到！";
 		gameOver();
 		GameLayerBG.className += " flash";
@@ -326,7 +305,7 @@ function gameTime() {
 			createjs.Sound.play("end");
 		}
 	} else {
-		GameTimeLayer.innerHTML = creatTimeText(_gameTimeNum);
+		GameTimeLayer.innerHTML = creatTimeText(gameState.remainingTime);
 	}
 }
 
@@ -342,55 +321,56 @@ function randomPos() {
 
 	// 生成按键产生的随机位置
 	let x = 0;
-	if (key[last] === "!") {
+	if (key[gameState.patternCursor] === "!") {
 		x = Math.floor(Math.random() * 1000) % laneCount;
-		let pos = last - 1;
+		let pos = gameState.patternCursor - 1;
 		if (pos === -1) {
 			pos = len - 1;
 		}
-	} else if (key[last] === "@") {
+	} else if (key[gameState.patternCursor] === "@") {
 		x = Math.floor(Math.random() * 1000) % laneCount;
-		if (x === lkey) {
+		if (x === gameState.lastLaneIndex) {
 			x++;
 			if (x === laneCount) {
 				x = 0;
 			}
 		}
-	} else if (key[last] === "#") {
-		x = lkey;
-	} else if (key[last] === "&") {
-		x = laneCount - 1 - lkey;
-	} else if (key[last] === "+") {
-		const num = parseInt(key[last + 1]!, 10);
-		last++;
-		x = (lkey + num) % laneCount;
-	} else if (key[last] === "-") {
-		const num = parseInt(key[last + 1]!, 10);
-		last++;
-		x = (lkey - num + laneCount) % laneCount;
-	} else if (key[last] === "%") {
-		const num1 = parseInt(key[last + 1]!, 10) - 1;
-		let num2 = parseInt(key[last + 2]!, 10) - 1;
+	} else if (key[gameState.patternCursor] === "#") {
+		x = gameState.lastLaneIndex;
+	} else if (key[gameState.patternCursor] === "&") {
+		x = laneCount - 1 - gameState.lastLaneIndex;
+	} else if (key[gameState.patternCursor] === "+") {
+		const num = parseInt(key[gameState.patternCursor + 1]!, 10);
+		gameState.patternCursor++;
+		x = (gameState.lastLaneIndex + num) % laneCount;
+	} else if (key[gameState.patternCursor] === "-") {
+		const num = parseInt(key[gameState.patternCursor + 1]!, 10);
+		gameState.patternCursor++;
+		x = (gameState.lastLaneIndex - num + laneCount) % laneCount;
+	} else if (key[gameState.patternCursor] === "%") {
+		const num1 = parseInt(key[gameState.patternCursor + 1]!, 10) - 1;
+		let num2 = parseInt(key[gameState.patternCursor + 2]!, 10) - 1;
 		if (num2 < num1) {
 			num2 += laneCount;
 		}
 		x = randomFrom(num1, num2) % laneCount;
-		last += 2;
-	} else if (key[last] === "*") {
-		const l = parseInt(key[last + 1]!, 10);
+		gameState.patternCursor += 2;
+	} else if (key[gameState.patternCursor] === "*") {
+		const l = parseInt(key[gameState.patternCursor + 1]!, 10);
 		const nums = [];
 		for (let i = 1; i <= l; ++i) {
-			nums.push(parseInt(key[last + i + 1]!, 10) - 1);
+			nums.push(parseInt(key[gameState.patternCursor + i + 1]!, 10) - 1);
 		}
-		last += l + 1;
+		gameState.patternCursor += l + 1;
 		x = nums[randomFrom(0, l - 1)]!;
 	} else {
-		x = parseInt(key[last]!, 10) - 1;
+		x = parseInt(key[gameState.patternCursor]!, 10) - 1;
 	}
-	lkey = x;
-	last++;
-	if (last === len) {
-		last = 0;
+
+	gameState.lastLaneIndex = x;
+	gameState.patternCursor++;
+	if (gameState.patternCursor === len) {
+		gameState.patternCursor = 0;
 	}
 	return x;
 }
@@ -414,7 +394,7 @@ function refreshGameLayer(
 		rstyle.backgroundImage = "none";
 		r.className = r.className.replace(_clearttClsReg, "");
 		if (i === j) {
-			_gameBBList.push({
+			gameState.blockQueue.push({
 				cell: i % laneCount,
 				id: r.id,
 			});
@@ -482,14 +462,14 @@ function getEventPosition(e: MouseEvent | TouchEvent, container: HTMLElement) {
 }
 
 function gameTapEvent(e: MouseEvent | TouchEvent) {
-	if (_gameOver) {
+	if (gameState.status === GameStatus.ENDED) {
 		return false;
 	}
 
 	const container = document.getElementById("gameBody") || document.body;
 	const { x, y } = getEventPosition(e, container);
 
-	const currentTarget = _gameBBList[_gameBBListIndex];
+	const currentTarget = gameState.blockQueue[gameState.currentBlockIndex];
 
 	if (!currentTarget) return false;
 
@@ -506,7 +486,7 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 	const isLaneCorrect = clickedLane === currentTarget.cell;
 
 	if (isLaneCorrect) {
-		if (!_gameStart) {
+		if (gameState.status !== GameStatus.PLAYING) {
 			gameStart();
 		}
 
@@ -520,12 +500,12 @@ function gameTapEvent(e: MouseEvent | TouchEvent) {
 			targetNode.style.backgroundImage = "none";
 		}
 
-		_gameBBListIndex++;
-		_gameScore++;
+		gameState.currentBlockIndex++;
+		gameState.addScore();
 
 		gameLayerMoveNextRow();
 	} else {
-		if (_gameStart) {
+		if (gameState.status === GameStatus.PLAYING) {
 			if (!config.get("isSoundMuted")) {
 				createjs.Sound.play("err");
 			}
@@ -586,50 +566,32 @@ function showWelcomeLayer() {
 
 function showGameScoreLayer() {
 	const l = document.getElementById("GameScoreLayer")!;
-	const endTime = date2 ? date2.getTime() : Date.now();
-	const startTime = _date1 ? _date1.getTime() : endTime;
-	deviation_time = endTime - startTime;
+	const lastBlockId = gameState.blockQueue[gameState.currentBlockIndex - 1]?.id;
+	if (lastBlockId) {
+		const lastBlock = document.getElementById(lastBlockId);
+		if (lastBlock) {
+			const match = lastBlock.className.match(_ttreg);
+			if (match) {
+				l.className = l.className.replace(/bgc\d/, `bgc${match[1]}`);
+			}
+		}
+	}
 
-	const c = (
-		document.getElementById(
-			_gameBBList[_gameBBListIndex - 1]!.id,
-		) as HTMLElement
-	).className.match(_ttreg)![1];
-
-	l.className = l.className.replace(/bgc\d/, `bgc${c}`);
-
-	const hideText = ConfigManager.getInstance().get("hideEndText");
+	const hideText = config.get("hideEndText");
 
 	document.getElementById("GameScoreLayer-text")!.innerHTML = hideText
 		? ""
-		: `<span style='color:red;'>${shareText(_gameScore)}</span>`;
+		: `<span style='color:red;'>${shareText(gameState.score)}</span>`;
 
 	let score_text = "您坚持了 ";
-	score_text +=
-		"<span style='color:red;'>" +
-		(deviation_time / 1000).toFixed(2) +
-		"</span>" +
-		" 秒哦！<br>您的得分为 ";
-	score_text += `<span style='color:red;'>${_gameScore}</span>`;
+	score_text += `<span style='color:red;'>${(gameState.duration / 1000).toFixed(2)}</span> 秒哦！<br>您的得分为 `;
+	score_text += `<span style='color:red;'>${gameState.score}</span>`;
 	score_text += "<br>您平均每秒点击了 ";
-	score_text +=
-		"<span style='color:red;'>" +
-		((_gameScore * 1000) / deviation_time).toFixed(2);
-	score_text += "</span>" + " 次哦！";
-	score_text +=
-		"<br>相当于 <span style='color:red;'>" +
-		((_gameScore * 15000) / deviation_time).toFixed(2) +
-		"</span> BPM 下的十六分音符哦！";
+	score_text += `<span style='color:red;'>${gameState.clicksPerSecond.toFixed(2)}</span> 次哦！`;
+	score_text += `<br>相当于 <span style='color:red;'>${gameState.bpmEquivalent.toFixed(2)}</span> BPM 下的十六分音符哦！`;
 	document.getElementById("GameScoreLayer-score")!.innerHTML = score_text;
-	let best = loadData<number>("best-score");
-
-	if (!best || _gameScore > best) {
-		best = _gameScore;
-		saveData("best-score", best);
-	}
-
 	document.getElementById("GameScoreLayer-bast")!.innerHTML =
-		`历史最佳得分 <span style='color:red;'>${best}</span>`;
+		`历史最佳得分 <span style='color:red;'>${gameState.bestScore}</span>`;
 	const now =
 		"您的自定义键型为：" +
 		"<span style='color:red;'>" +
@@ -650,7 +612,6 @@ function replayBtn() {
 }
 
 function shareText(score: number) {
-	const config = ConfigManager.getInstance();
 	const timeLimit = config.get("timeLimit");
 
 	if (score <= 2.5 * timeLimit) return "加油！我相信您可以的！";
@@ -661,8 +622,6 @@ function shareText(score: number) {
 }
 
 function initSetting() {
-	const config = ConfigManager.getInstance();
-
 	const laneCount = config.get("laneCount");
 	(document.getElementById("k") as HTMLInputElement).value =
 		laneCount.toString();
@@ -711,7 +670,6 @@ function lstpage(i: number) {
 }
 
 function show_setting() {
-	const config = ConfigManager.getInstance();
 	const laneCount = config.get("laneCount");
 	const keyMappingStr = config.get("keyMapping").slice(0, laneCount).join("");
 
@@ -762,7 +720,7 @@ function save_cookie() {
 	const dropPatternStr = (document.getElementById("note") as HTMLInputElement)
 		.value;
 
-	const currentLaneCount = ConfigManager.getInstance().get("laneCount");
+	const currentLaneCount = config.get("laneCount");
 
 	config.update({
 		laneCount: laneCountVal,
@@ -824,7 +782,7 @@ function click(laneIndex: number) {
 }
 
 function autoset(pattern: string) {
-	ConfigManager.getInstance().update({
+	config.update({
 		dropPattern: pattern,
 	});
 
@@ -844,7 +802,7 @@ function showImg(input: HTMLInputElement) {
 }
 
 function stair() {
-	const k = ConfigManager.getInstance().get("laneCount");
+	const k = config.get("laneCount");
 	let pattern = "";
 
 	for (let i = 1; i < k; ++i) {
@@ -854,7 +812,7 @@ function stair() {
 		pattern += i.toString();
 	}
 
-	ConfigManager.getInstance().update({
+	config.update({
 		dropPattern: pattern,
 	});
 	updateGamePattern();
