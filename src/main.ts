@@ -759,8 +759,10 @@ function save_cookie() {
 		(document.getElementById("k") as HTMLInputElement).value,
 		10,
 	);
+	const dropPatternStr = (document.getElementById("note") as HTMLInputElement)
+		.value;
 
-	const currentLaneCount = config.get("laneCount");
+	const currentLaneCount = ConfigManager.getInstance().get("laneCount");
 
 	config.update({
 		laneCount: laneCountVal,
@@ -769,6 +771,7 @@ function save_cookie() {
 		hideEndText: hideEndText,
 		isSoundMuted: isSoundMuted,
 		enableVerticalJudgement: enableVerticalJudgement,
+		dropPattern: dropPatternStr,
 	});
 
 	if (laneCountVal !== currentLaneCount) {
